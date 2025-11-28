@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
+import { Check } from 'lucide-react';
 
 interface AddModalProps {
   isOpen: boolean;
@@ -11,21 +12,33 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
   const { addTask, selectedDate } = useTasks();
   const { t } = useLanguage();
   const [value, setValue] = useState('');
+  const [status, setStatus] = useState<'idle' | 'success'>('idle');
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
+      setStatus('idle');
     }
   }, [isOpen]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (value.trim()) {
+      setStatus('success');
+      
+      // Haptic feedback
+      if (navigator.vibrate) navigator.vibrate(50);
+
       // Use selectedDate from context to default the task date
       addTask(value.trim(), 'inbox', selectedDate);
-      setValue('');
-      onClose();
+      
+      // Delay closing to show success state
+      setTimeout(() => {
+          setValue('');
+          setStatus('idle');
+          onClose();
+      }, 500);
     }
   };
 
@@ -41,14 +54,23 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
             onClick={(e) => e.stopPropagation()}
         >
             <div className="flex justify-between items-center mb-6">
-                <button className="text-gray-400 text-sm font-medium px-2 py-1" onClick={onClose}>{t('list.cancel')}</button>
+                <button 
+                    className="text-gray-400 text-sm font-medium px-2 py-1" 
+                    onClick={onClose}
+                >
+                    {t('list.cancel')}
+                </button>
                 <span className="text-[15px] font-bold text-gray-900">{t('add.title')}</span>
                 <button 
-                    className={`text-sm font-bold px-3 py-1 bg-black text-white rounded-full transition-opacity ${!value.trim() ? 'opacity-50' : 'opacity-100'}`}
+                    className={`text-sm font-bold h-8 px-4 flex items-center justify-center rounded-full transition-all duration-300 ${
+                        status === 'success' 
+                            ? 'bg-green-500 text-white w-12' 
+                            : !value.trim() ? 'bg-black text-white opacity-50' : 'bg-black text-white opacity-100'
+                    }`}
                     onClick={() => handleSubmit()}
-                    disabled={!value.trim()}
+                    disabled={!value.trim() || status === 'success'}
                 >
-                    {t('add.button')}
+                    {status === 'success' ? <Check className="w-4 h-4" /> : t('add.button')}
                 </button>
             </div>
             <form onSubmit={handleSubmit}>
@@ -59,6 +81,7 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
                     onChange={(e) => setValue(e.target.value)}
                     placeholder={t('add.placeholder')}
                     className="w-full text-xl font-medium placeholder-gray-300 border-none focus:ring-0 p-0 mb-4 bg-transparent outline-none text-gray-900"
+                    disabled={status === 'success'}
                 />
             </form>
             <div className="flex gap-2 mt-2 items-center">

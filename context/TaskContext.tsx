@@ -14,6 +14,7 @@ interface TaskContextType {
   clearAllTasks: () => void;
   selectedDate: string;
   setSelectedDate: (date: string) => void;
+  inboxShakeTrigger: number;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -55,6 +56,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
 
   const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
+  const [inboxShakeTrigger, setInboxShakeTrigger] = useState(0);
 
   useEffect(() => {
     try {
@@ -82,6 +84,10 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       plannedDate: date
     };
     setTasks(prev => [newTask, ...prev]);
+    // Trigger shake animation if added to inbox
+    if (category === 'inbox') {
+        setInboxShakeTrigger(prev => prev + 1);
+    }
   };
 
   const updateTask = (taskId: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>) => {
@@ -123,7 +129,8 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       toggleHardcoreMode,
       clearAllTasks,
       selectedDate,
-      setSelectedDate
+      setSelectedDate,
+      inboxShakeTrigger
     }}>
       {children}
     </TaskContext.Provider>

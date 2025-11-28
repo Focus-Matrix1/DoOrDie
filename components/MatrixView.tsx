@@ -4,6 +4,7 @@ import { Inbox, ChevronLeft, Zap, Calendar, Users, Coffee, AlignLeft } from 'luc
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Task, QuadrantId } from '../types';
+import { TaskDetailModal } from './TaskDetailModal';
 
 // Helper to determine drop zone from coordinates
 const getDropZone = (x: number, y: number): QuadrantId | null => {
@@ -21,8 +22,10 @@ const Quadrant: React.FC<{
   tasks: Task[];
   highlighted: boolean;
   onComplete: (id: string) => void;
+  onDragStart: (e: React.PointerEvent, task: Task) => void;
+  onClickTask: (task: Task) => void;
   emptyText: string;
-}> = ({ id, title, icon, colorClass, bgClass, tasks, highlighted, onComplete, emptyText }) => {
+}> = ({ id, title, icon, colorClass, bgClass, tasks, highlighted, onComplete, onDragStart, onClickTask, emptyText }) => {
   return (
     <div
       data-zone-id={id}
@@ -40,16 +43,22 @@ const Quadrant: React.FC<{
         {tasks.map(task => (
           <div
             key={task.id}
-            className={`flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm border border-transparent active:scale-[0.98] transition-all cursor-pointer hover:shadow-md fade-in group`}
+            onPointerDown={(e) => {
+                // Ignore clicks on checkbox
+                if ((e.target as HTMLElement).closest('.checkbox-area')) return;
+                onDragStart(e, task);
+            }}
+            onClick={() => onClickTask(task)}
+            className={`flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm border border-transparent active:scale-[0.98] transition-all cursor-grab active:cursor-grabbing hover:shadow-md fade-in group touch-none`}
           >
             <div
+              className="checkbox-area w-7 h-7 -ml-1 flex items-center justify-center cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
                 onComplete(task.id);
               }}
-              className={`w-5 h-5 rounded-md border-[1.5px] border-gray-200 bg-gray-50 flex items-center justify-center shrink-0 hover:border-green-400 hover:bg-green-50 transition-colors group-hover:border-gray-300`}
             >
-             {/* Checkbox circle empty */}
+                <div className="w-5 h-5 rounded-md border-[1.5px] border-gray-200 bg-gray-50 flex items-center justify-center shrink-0 hover:border-green-400 hover:bg-green-50 transition-colors group-hover:border-gray-300 pointer-events-none"></div>
             </div>
             <span className="text-[13px] text-gray-800 font-medium truncate pt-0.5 select-none">{task.title}</span>
           </div>
@@ -65,20 +74,32 @@ const Quadrant: React.FC<{
 };
 
 export const MatrixView: React.FC = () => {
-  const { tasks, getTasksByCategory, moveTask, completeTask, hardcoreMode } = useTasks();
+  const { tasks, getTasksByCategory, moveTask, completeTask, hardcoreMode, inboxShakeTrigger, updateTask, deleteTask } = useTasks();
   const { t, language } = useLanguage();
   const [isInboxOpen, setInboxOpen] = useState(false);
   const [dragItem, setDragItem] = useState<{ task: Task; x: number; y: number; offsetX: number; offsetY: number } | null>(null);
   const [highlightedZone, setHighlightedZone] = useState<QuadrantId | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isInboxShaking, setInboxShaking] = useState(false);
   
   // Stats for the header
   const inboxTasks = getTasksByCategory('inbox');
   const today = new Date().toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
+  useEffect(() => {
+    if (inboxShakeTrigger > 0) {
+        setInboxShaking(true);
+        const timer = setTimeout(() => setInboxShaking(false), 500); // 0.5s animation
+        return () => clearTimeout(timer);
+    }
+  }, [inboxShakeTrigger]);
+
   // Drag Logic
   const handleDragStart = (e: React.PointerEvent, task: Task) => {
     // Prevent default touch actions like scrolling
     e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
@@ -91,7 +112,7 @@ export const MatrixView: React.FC = () => {
       offsetY,
     });
     
-    // Close inbox to reveal matrix immediately
+    // Close inbox if open
     setInboxOpen(false);
     
     // Vibrations for mobile
@@ -112,12 +133,20 @@ export const MatrixView: React.FC = () => {
     if (!dragItem) return;
     
     const zone = getDropZone(e.clientX, e.clientY);
+    
     if (zone) {
-      moveTask(dragItem.task.id, zone);
-      if (navigator.vibrate) navigator.vibrate(20);
+        // If dropping into a zone
+        if (zone !== dragItem.task.category) {
+            moveTask(dragItem.task.id, zone);
+            if (navigator.vibrate) navigator.vibrate(20);
+        }
     } else {
-      // If dropped nowhere, reopen inbox
-      setInboxOpen(true);
+      // If dropped nowhere (and not started from matrix), maybe reopen inbox logic could go here
+      // For now, if dragged from Inbox to nowhere, it stays in Inbox.
+      // If dragged from Q1 to nowhere, it stays in Q1.
+      if (dragItem.task.category === 'inbox' && !zone) {
+          setInboxOpen(true);
+      }
     }
 
     setDragItem(null);
@@ -150,7 +179,7 @@ export const MatrixView: React.FC = () => {
         </div>
         <button 
           onClick={() => setInboxOpen(true)}
-          className="w-12 h-12 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center active:scale-90 transition-transform relative group cursor-pointer"
+          className={`w-12 h-12 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center active:scale-90 transition-transform relative group cursor-pointer ${isInboxShaking ? 'animate-shake' : ''}`}
         >
           <AlignLeft className="w-6 h-6 text-gray-600 group-hover:text-black" />
           {inboxTasks.length > 0 && (
@@ -172,6 +201,8 @@ export const MatrixView: React.FC = () => {
           tasks={getTasksByCategory('q1')} 
           highlighted={highlightedZone === 'q1'}
           onComplete={completeTask}
+          onDragStart={handleDragStart}
+          onClickTask={setEditingTask}
           emptyText={t('matrix.empty')}
         />
         <Quadrant 
@@ -183,6 +214,8 @@ export const MatrixView: React.FC = () => {
           tasks={getTasksByCategory('q2')} 
           highlighted={highlightedZone === 'q2'}
           onComplete={completeTask}
+          onDragStart={handleDragStart}
+          onClickTask={setEditingTask}
           emptyText={t('matrix.empty')}
         />
         <Quadrant 
@@ -194,6 +227,8 @@ export const MatrixView: React.FC = () => {
           tasks={getTasksByCategory('q3')} 
           highlighted={highlightedZone === 'q3'}
           onComplete={completeTask}
+          onDragStart={handleDragStart}
+          onClickTask={setEditingTask}
           emptyText={t('matrix.empty')}
         />
         <Quadrant 
@@ -205,6 +240,8 @@ export const MatrixView: React.FC = () => {
           tasks={getTasksByCategory('q4')} 
           highlighted={highlightedZone === 'q4'}
           onComplete={completeTask}
+          onDragStart={handleDragStart}
+          onClickTask={setEditingTask}
           emptyText={t('matrix.empty')}
         />
       </div>
@@ -251,6 +288,17 @@ export const MatrixView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Detail Modal */}
+      {editingTask && (
+        <TaskDetailModal 
+            task={editingTask}
+            onClose={() => setEditingTask(null)}
+            onUpdate={updateTask}
+            onDelete={deleteTask}
+            t={t}
+        />
+      )}
 
       {/* Drag Ghost Element */}
       {dragItem && createPortal(
