@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Inbox, ChevronLeft, Zap, Calendar, Users, Coffee, AlignLeft } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
-import { CategoryId, Task, QuadrantId } from '../types';
+import { useLanguage } from '../context/LanguageContext';
+import { Task, QuadrantId } from '../types';
 
 // Helper to determine drop zone from coordinates
 const getDropZone = (x: number, y: number): QuadrantId | null => {
@@ -20,7 +21,8 @@ const Quadrant: React.FC<{
   tasks: Task[];
   highlighted: boolean;
   onComplete: (id: string) => void;
-}> = ({ id, title, icon, colorClass, bgClass, tasks, highlighted, onComplete }) => {
+  emptyText: string;
+}> = ({ id, title, icon, colorClass, bgClass, tasks, highlighted, onComplete, emptyText }) => {
   return (
     <div
       data-zone-id={id}
@@ -54,7 +56,7 @@ const Quadrant: React.FC<{
         ))}
         {tasks.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full opacity-30 select-none pointer-events-none">
-             <span className="text-[10px] font-medium tracking-wider uppercase">Empty</span>
+             <span className="text-[10px] font-medium tracking-wider uppercase">{emptyText}</span>
           </div>
         )}
       </div>
@@ -64,13 +66,14 @@ const Quadrant: React.FC<{
 
 export const MatrixView: React.FC = () => {
   const { tasks, getTasksByCategory, moveTask, completeTask, hardcoreMode } = useTasks();
+  const { t, language } = useLanguage();
   const [isInboxOpen, setInboxOpen] = useState(false);
   const [dragItem, setDragItem] = useState<{ task: Task; x: number; y: number; offsetX: number; offsetY: number } | null>(null);
   const [highlightedZone, setHighlightedZone] = useState<QuadrantId | null>(null);
   
   // Stats for the header
   const inboxTasks = getTasksByCategory('inbox');
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  const today = new Date().toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
   // Drag Logic
   const handleDragStart = (e: React.PointerEvent, task: Task) => {
@@ -143,7 +146,7 @@ export const MatrixView: React.FC = () => {
       <div className="px-6 pt-6 pb-4 z-40 relative shrink-0 flex justify-between items-end">
         <div className="flex flex-col items-start select-none">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1 font-['Inter']">{today}</h2>
-          <h1 className="text-[34px] font-bold text-gray-900 leading-none tracking-tight">Focus Matrix</h1>
+          <h1 className="text-[34px] font-bold text-gray-900 leading-none tracking-tight">{t('matrix.title')}</h1>
         </div>
         <button 
           onClick={() => setInboxOpen(true)}
@@ -162,43 +165,47 @@ export const MatrixView: React.FC = () => {
 
         <Quadrant 
           id="q1" 
-          title="Do First" 
+          title={t('q1.title')}
           icon={<Zap className="w-4 h-4" />} 
           colorClass="text-rose-500" 
           bgClass="bg-[#FFF5F5]" 
           tasks={getTasksByCategory('q1')} 
           highlighted={highlightedZone === 'q1'}
           onComplete={completeTask}
+          emptyText={t('matrix.empty')}
         />
         <Quadrant 
           id="q2" 
-          title="Schedule" 
+          title={t('q2.title')}
           icon={<Calendar className="w-4 h-4" />} 
           colorClass="text-blue-600" 
           bgClass="bg-blue-50/40" 
           tasks={getTasksByCategory('q2')} 
           highlighted={highlightedZone === 'q2'}
           onComplete={completeTask}
+          emptyText={t('matrix.empty')}
         />
         <Quadrant 
           id="q3" 
-          title="Delegate" 
+          title={t('q3.title')}
           icon={<Users className="w-4 h-4" />} 
           colorClass="text-amber-600" 
           bgClass="bg-[#FFFAEB]" 
           tasks={getTasksByCategory('q3')} 
           highlighted={highlightedZone === 'q3'}
           onComplete={completeTask}
+          emptyText={t('matrix.empty')}
         />
         <Quadrant 
           id="q4" 
-          title="Eliminate" 
+          title={t('q4.title')}
           icon={<Coffee className="w-4 h-4" />} 
           colorClass="text-slate-500" 
           bgClass="bg-slate-50/50" 
           tasks={getTasksByCategory('q4')} 
           highlighted={highlightedZone === 'q4'}
           onComplete={completeTask}
+          emptyText={t('matrix.empty')}
         />
       </div>
 
@@ -216,9 +223,9 @@ export const MatrixView: React.FC = () => {
         <div className="px-6 pt-12 pb-4 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center shrink-0">
           <div>
              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-               <Inbox className="w-5 h-5 text-gray-900" /> Inbox
+               <Inbox className="w-5 h-5 text-gray-900" /> {t('matrix.inbox')}
              </h2>
-             <p className="text-[11px] text-gray-400 mt-1 font-medium">{hardcoreMode ? "Hardcore: Organize now." : "Hold & Drag to Matrix"}</p>
+             <p className="text-[11px] text-gray-400 mt-1 font-medium">{hardcoreMode ? t('list.hint.hardcore') : t('matrix.inbox.hint')}</p>
           </div>
           <button onClick={() => setInboxOpen(false)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center active:scale-90 transition-transform cursor-pointer hover:bg-gray-200">
             <ChevronLeft className="w-5 h-5 text-gray-500" />
@@ -227,7 +234,7 @@ export const MatrixView: React.FC = () => {
         
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {inboxTasks.length === 0 ? (
-             <div className="text-center mt-10 text-gray-300 text-sm">Inbox Zero 🎉</div>
+             <div className="text-center mt-10 text-gray-300 text-sm">{t('matrix.inbox.zero')}</div>
           ) : (
              inboxTasks.map(task => (
                 <div 

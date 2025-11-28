@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { LayoutGrid, Trash2, X, Zap, Calendar, Users, Coffee } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Task, CategoryId } from '../types';
 
 const SwipeableTask: React.FC<{ 
@@ -8,7 +9,8 @@ const SwipeableTask: React.FC<{
   onCategorize: (task: Task) => void;
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
-}> = ({ task, onCategorize, onDelete, onComplete }) => {
+  t: (key: string) => string;
+}> = ({ task, onCategorize, onDelete, onComplete, t }) => {
   const [offset, setOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startX = useRef(0);
@@ -65,10 +67,10 @@ const SwipeableTask: React.FC<{
       {/* Background Actions */}
       <div className="absolute inset-0 flex z-0 rounded-xl overflow-hidden">
         <div className="w-full h-full bg-blue-500 flex items-center justify-start pl-6 text-white font-bold text-sm">
-           <LayoutGrid className="w-5 h-5 mr-1" /> Categorize
+           <LayoutGrid className="w-5 h-5 mr-1" /> {t('list.action.categorize')}
         </div>
         <div className="absolute right-0 w-full h-full bg-rose-500 flex items-center justify-end pr-6 text-white font-bold text-sm">
-           Delete <Trash2 className="w-5 h-5 ml-1" />
+           {t('list.action.delete')} <Trash2 className="w-5 h-5 ml-1" />
         </div>
       </div>
 
@@ -98,7 +100,10 @@ const SwipeableTask: React.FC<{
                 task.category === 'q3' ? 'bg-amber-100 text-amber-600' :
                 'bg-slate-100 text-slate-600'
             }`}>
-                {task.category === 'inbox' ? 'Inbox' : task.category.toUpperCase()}
+                {task.category === 'inbox' ? t('matrix.inbox') :
+                 task.category === 'q1' ? 'Q1' :
+                 task.category === 'q2' ? 'Q2' :
+                 task.category === 'q3' ? 'Q3' : 'Q4'}
             </span>
         </div>
       </div>
@@ -108,6 +113,7 @@ const SwipeableTask: React.FC<{
 
 export const ListView: React.FC = () => {
   const { tasks, completeTask, deleteTask, moveTask, hardcoreMode } = useTasks();
+  const { t } = useLanguage();
   const [categorizingTask, setCategorizingTask] = useState<Task | null>(null);
 
   // Filter out completed tasks for the list
@@ -125,9 +131,9 @@ export const ListView: React.FC = () => {
       <div className="bg-white z-40 relative pt-6 pb-4 px-6 shadow-sm rounded-b-[32px] shrink-0 mb-4">
         <div className="flex justify-between items-center px-1">
           <div>
-            <h1 className="text-[26px] font-bold text-gray-900 tracking-tight">Active Tasks</h1>
+            <h1 className="text-[26px] font-bold text-gray-900 tracking-tight">{t('list.title')}</h1>
             <span className="text-[12px] font-medium text-gray-400 font-['Inter']">
-              {hardcoreMode ? "Hardcore Enabled: No Editing" : "Swipe Left to Delete · Right to Sort"}
+              {hardcoreMode ? t('list.hint.hardcore') : t('list.hint.normal')}
             </span>
           </div>
           <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-sm font-bold text-gray-500">
@@ -139,7 +145,7 @@ export const ListView: React.FC = () => {
       <div className="flex-1 px-4 overflow-y-auto no-scrollbar pb-32 space-y-3">
         {activeTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 mt-10 text-gray-400">
-                <span className="text-sm">No active tasks</span>
+                <span className="text-sm">{t('list.empty')}</span>
             </div>
         ) : (
             activeTasks.map(task => (
@@ -149,6 +155,7 @@ export const ListView: React.FC = () => {
                 onCategorize={(t) => !hardcoreMode && setCategorizingTask(t)} 
                 onDelete={(id) => !hardcoreMode && deleteTask(id)}
                 onComplete={completeTask}
+                t={t}
             />
             ))
         )}
@@ -165,25 +172,25 @@ export const ListView: React.FC = () => {
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex justify-between items-center mb-6">
-                    <span className="text-[16px] font-bold text-gray-900">Move "{categorizingTask.title}" to...</span>
+                    <span className="text-[16px] font-bold text-gray-900">{t('list.move_to').replace('{title}', categorizingTask.title)}</span>
                     <button onClick={() => setCategorizingTask(null)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200"><X className="w-4 h-4 text-gray-500" /></button>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                     <button onClick={() => handleCategorySelect('q1')} className="p-4 bg-rose-50 border border-rose-100 rounded-xl flex flex-col items-center gap-2 active:scale-95 transition-transform hover:bg-rose-100">
                         <Zap className="w-6 h-6 text-rose-500" />
-                        <span className="text-xs font-bold text-rose-700">Do First (Q1)</span>
+                        <span className="text-xs font-bold text-rose-700">{t('q1.title')} (Q1)</span>
                     </button>
                     <button onClick={() => handleCategorySelect('q2')} className="p-4 bg-blue-50 border border-blue-100 rounded-xl flex flex-col items-center gap-2 active:scale-95 transition-transform hover:bg-blue-100">
                         <Calendar className="w-6 h-6 text-blue-500" />
-                        <span className="text-xs font-bold text-blue-700">Schedule (Q2)</span>
+                        <span className="text-xs font-bold text-blue-700">{t('q2.title')} (Q2)</span>
                     </button>
                     <button onClick={() => handleCategorySelect('q3')} className="p-4 bg-amber-50 border border-amber-100 rounded-xl flex flex-col items-center gap-2 active:scale-95 transition-transform hover:bg-amber-100">
                         <Users className="w-6 h-6 text-amber-500" />
-                        <span className="text-xs font-bold text-amber-700">Delegate (Q3)</span>
+                        <span className="text-xs font-bold text-amber-700">{t('q3.title')} (Q3)</span>
                     </button>
                     <button onClick={() => handleCategorySelect('q4')} className="p-4 bg-slate-50 border border-slate-100 rounded-xl flex flex-col items-center gap-2 active:scale-95 transition-transform hover:bg-slate-100">
                         <Coffee className="w-6 h-6 text-slate-500" />
-                        <span className="text-xs font-bold text-slate-700">Eliminate (Q4)</span>
+                        <span className="text-xs font-bold text-slate-700">{t('q4.title')} (Q4)</span>
                     </button>
                 </div>
             </div>

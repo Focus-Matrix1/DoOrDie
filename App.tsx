@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, Component, ReactNode, ErrorInfo } from 'react';
 import { TaskProvider } from './context/TaskContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { MatrixView } from './components/MatrixView';
 import { ListView } from './components/ListView';
 import { StatsView } from './components/StatsView';
@@ -9,17 +10,26 @@ import { LayoutGrid, ListTodo, BarChart2, User, Plus, AlertTriangle } from 'luci
 import { ViewState } from './types';
 
 // --- Error Boundary Component ---
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
-  constructor(props: any) {
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error: Error) {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
   }
 
@@ -122,9 +132,11 @@ const AppContent: React.FC = () => {
 export default function App() {
   return (
     <ErrorBoundary>
-      <TaskProvider>
-        <AppContent />
-      </TaskProvider>
+      <LanguageProvider>
+        <TaskProvider>
+          <AppContent />
+        </TaskProvider>
+      </LanguageProvider>
     </ErrorBoundary>
   );
 }
