@@ -84,7 +84,8 @@ const AppContent: React.FC = () => {
   );
 
   return (
-    <div className="w-full h-screen flex flex-col bg-[#F5F7FA] overflow-hidden text-gray-900 relative">
+    // Use h-[100dvh] to respect the mobile browser address bar dynamics
+    <div className="w-full h-[100dvh] flex flex-col bg-[#F5F7FA] overflow-hidden text-gray-900 relative">
         
         {/* Main Content Area */}
         <div className="flex-1 overflow-hidden relative">
@@ -103,7 +104,8 @@ const AppContent: React.FC = () => {
         </div>
 
         {/* Bottom Navigation */}
-        <div className="h-[84px] bg-white/95 backdrop-blur-xl flex justify-around items-start pt-4 px-4 z-50 absolute bottom-0 left-0 right-0 border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+        {/* pb-[calc(16px+env(safe-area-inset-bottom))] ensures padding accounts for Home Bar on iOS */}
+        <div className="bg-white/95 backdrop-blur-xl flex justify-around items-start pt-4 px-4 pb-[calc(16px+env(safe-area-inset-bottom))] z-50 absolute bottom-0 left-0 right-0 border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
             <NavButton view="matrix" icon={LayoutGrid} />
             <NavButton view="list" icon={ListTodo} />
             
