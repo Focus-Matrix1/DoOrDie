@@ -64,6 +64,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     'add.title': 'New Task',
     'add.placeholder': 'What needs to be done?',
+    'add.description_placeholder': 'Add details (optional)',
     'add.button': 'Add',
     'add.hint': '↵ Enter to save',
     
@@ -127,6 +128,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     'add.title': '新任务',
     'add.placeholder': '准备做点什么？',
+    'add.description_placeholder': '添加备注（选填）',
     'add.button': '添加',
     'add.hint': '↵ 回车保存',
 

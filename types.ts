@@ -4,6 +4,7 @@ export type CategoryId = 'inbox' | QuadrantId;
 export interface Task {
   id: string;
   title: string;
+  description?: string; // New field
   category: CategoryId;
   createdAt: number;
   completed: boolean;

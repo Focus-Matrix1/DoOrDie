@@ -3,7 +3,7 @@ import { Task, CategoryId } from '../types';
 
 interface TaskContextType {
   tasks: Task[];
-  addTask: (title: string, category?: CategoryId, date?: string) => void;
+  addTask: (title: string, category?: CategoryId, date?: string, description?: string) => void;
   updateTask: (taskId: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>) => void;
   moveTask: (taskId: string, targetCategory: CategoryId) => void;
   completeTask: (taskId: string) => void;
@@ -15,6 +15,7 @@ interface TaskContextType {
   selectedDate: string;
   setSelectedDate: (date: string) => void;
   inboxShakeTrigger: number;
+  addSuccessTrigger: number; // Signal for FAB animation
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -57,6 +58,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
   const [inboxShakeTrigger, setInboxShakeTrigger] = useState(0);
+  const [addSuccessTrigger, setAddSuccessTrigger] = useState(0);
 
   useEffect(() => {
     try {
@@ -74,20 +76,23 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [hardcoreMode]);
 
-  const addTask = (title: string, category: CategoryId = 'inbox', date?: string) => {
+  const addTask = (title: string, category: CategoryId = 'inbox', date?: string, description?: string) => {
     const newTask: Task = {
       id: Math.random().toString(36).substr(2, 9),
       title,
+      description,
       category,
       createdAt: Date.now(),
       completed: false,
       plannedDate: date
     };
     setTasks(prev => [newTask, ...prev]);
-    // Trigger shake animation if added to inbox
+    
+    // Trigger animations
     if (category === 'inbox') {
         setInboxShakeTrigger(prev => prev + 1);
     }
+    setAddSuccessTrigger(prev => prev + 1);
   };
 
   const updateTask = (taskId: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>) => {
@@ -130,7 +135,8 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       clearAllTasks,
       selectedDate,
       setSelectedDate,
-      inboxShakeTrigger
+      inboxShakeTrigger,
+      addSuccessTrigger
     }}>
       {children}
     </TaskContext.Provider>

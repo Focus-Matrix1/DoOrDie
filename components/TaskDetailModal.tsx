@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Zap, Calendar, Users, Coffee, Clock, Trash2 } from 'lucide-react';
 import { Task, CategoryId } from '../types';
 
@@ -12,21 +12,34 @@ interface TaskDetailModalProps {
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose, onUpdate, onDelete, t }) => {
   const [title, setTitle] = useState(task?.title || '');
-  const [category, setCategory] = useState<CategoryId>(task?.category || 'inbox');
+  const [description, setDescription] = useState(task?.description || '');
+  const [category, setCategory] = useState<CategoryId>(task?.category || 'q1'); // Default to Q1 if was inbox
   const [plannedDate, setPlannedDate] = useState(task?.plannedDate || '');
+  
+  const descRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (task) {
       setTitle(task.title);
-      setCategory(task.category);
+      setDescription(task.description || '');
+      // If task is inbox, default selection to Q1 for easier moving
+      setCategory(task.category === 'inbox' ? 'q1' : task.category);
       setPlannedDate(task.plannedDate || '');
     }
   }, [task]);
 
+  useEffect(() => {
+      // Auto resize description
+      if (descRef.current) {
+          descRef.current.style.height = 'auto';
+          descRef.current.style.height = descRef.current.scrollHeight + 'px';
+      }
+  }, [description, task]);
+
   if (!task) return null;
 
   const handleSave = () => {
-    onUpdate(task.id, { title, category, plannedDate });
+    onUpdate(task.id, { title, description, category, plannedDate });
     onClose();
   };
 
@@ -57,12 +70,20 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
 
             <div className="space-y-6">
                 {/* Title Input */}
-                <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-2">
                     <input 
                         type="text" 
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         className="w-full bg-transparent text-lg font-medium outline-none text-gray-900 placeholder-gray-400"
+                    />
+                    <textarea 
+                        ref={descRef}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder={t('add.description_placeholder')}
+                        className="w-full bg-transparent text-sm text-gray-600 outline-none placeholder-gray-400 resize-none overflow-hidden"
+                        rows={1}
                     />
                 </div>
 
@@ -77,17 +98,10 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                      />
                 </div>
 
-                {/* Category Selection */}
+                {/* Category Selection (No Inbox) */}
                 <div>
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 block px-1">{t('detail.category')}</label>
                     <div className="grid grid-cols-2 gap-3">
-                        <button 
-                            onClick={() => setCategory('inbox')}
-                            className={`p-3 rounded-xl border flex items-center gap-2 transition-all active:scale-95 ${category === 'inbox' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-600'}`}
-                        >
-                           <div className={`w-3 h-3 rounded-full ${category === 'inbox' ? 'bg-white' : 'bg-gray-300'}`}></div>
-                           <span className="text-sm font-bold">{t('matrix.inbox')}</span>
-                        </button>
                         <button 
                             onClick={() => setCategory('q1')}
                             className={`p-3 rounded-xl border flex items-center gap-2 transition-all active:scale-95 ${category === 'q1' ? 'bg-rose-500 text-white border-rose-500' : 'bg-white border-gray-200 text-gray-600'}`}

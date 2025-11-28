@@ -1,12 +1,12 @@
-import React, { useState, ReactNode, ErrorInfo, Component } from 'react';
-import { TaskProvider } from './context/TaskContext';
+import React, { useState, useEffect, ReactNode, ErrorInfo, Component } from 'react';
+import { TaskProvider, useTasks } from './context/TaskContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { MatrixView } from './components/MatrixView';
 import { ListView } from './components/ListView';
 import { StatsView } from './components/StatsView';
 import { UserView } from './components/UserView';
 import { AddModal } from './components/AddModal';
-import { LayoutGrid, ListTodo, BarChart2, User, Plus, AlertTriangle } from 'lucide-react';
+import { LayoutGrid, ListTodo, BarChart2, User, Plus, Check, AlertTriangle } from 'lucide-react';
 import { ViewState } from './types';
 
 // --- Error Boundary Component ---
@@ -73,6 +73,17 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('matrix');
   const [isAddModalOpen, setAddModalOpen] = useState(false);
+  const { addSuccessTrigger } = useTasks();
+  const [isSuccessAnim, setSuccessAnim] = useState(false);
+
+  useEffect(() => {
+    if (addSuccessTrigger > 0) {
+        setSuccessAnim(true);
+        if (navigator.vibrate) navigator.vibrate(50);
+        const timer = setTimeout(() => setSuccessAnim(false), 800);
+        return () => clearTimeout(timer);
+    }
+  }, [addSuccessTrigger]);
 
   const NavButton = ({ view, icon: Icon }: { view: ViewState; icon: React.ElementType }) => (
     <button 
@@ -84,7 +95,6 @@ const AppContent: React.FC = () => {
   );
 
   return (
-    // Use h-[100dvh] to respect the mobile browser address bar dynamics
     <div className="w-full h-[100dvh] flex flex-col bg-[#F5F7FA] overflow-hidden text-gray-900 relative">
         
         {/* Main Content Area */}
@@ -104,18 +114,25 @@ const AppContent: React.FC = () => {
         </div>
 
         {/* Bottom Navigation */}
-        {/* pb-[calc(16px+env(safe-area-inset-bottom))] ensures padding accounts for Home Bar on iOS */}
         <div className="bg-white/95 backdrop-blur-xl flex justify-around items-start pt-4 px-4 pb-[calc(16px+env(safe-area-inset-bottom))] z-50 absolute bottom-0 left-0 right-0 border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
             <NavButton view="matrix" icon={LayoutGrid} />
             <NavButton view="list" icon={ListTodo} />
             
-            {/* Add Button */}
+            {/* Add Button with Success Animation */}
             <button 
                 onClick={() => setAddModalOpen(true)}
                 className="relative -top-8 group"
             >
-                <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center text-white shadow-xl shadow-black/20 transition-all duration-300 group-hover:scale-105 group-active:scale-95 border-[4px] border-white ring-1 ring-gray-100">
-                    <Plus className="w-8 h-8 stroke-[3]" />
+                <div 
+                    className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-xl shadow-black/20 transition-all duration-300 border-[4px] border-white ring-1 ring-gray-100 ${
+                        isSuccessAnim ? 'bg-green-500 scale-110 rotate-12' : 'bg-black group-hover:scale-105 group-active:scale-95'
+                    }`}
+                >
+                    {isSuccessAnim ? (
+                        <Check className="w-8 h-8 stroke-[3]" />
+                    ) : (
+                        <Plus className="w-8 h-8 stroke-[3]" />
+                    )}
                 </div>
             </button>
 
