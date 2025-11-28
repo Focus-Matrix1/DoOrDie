@@ -12,7 +12,6 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 const translations: Record<Language, Record<string, string>> = {
   en: {
-    // Matrix View
     'matrix.title': 'Focus Matrix',
     'matrix.inbox': 'Inbox',
     'matrix.empty': 'Empty',
@@ -23,24 +22,25 @@ const translations: Record<Language, Record<string, string>> = {
     'q3.title': 'Delegate',
     'q4.title': 'Eliminate',
     
-    // List View
-    'list.title': 'Active Tasks',
-    'list.hint.hardcore': 'Hardcore Enabled: No Editing',
+    'list.title': 'Tasks',
+    'list.hint.hardcore': 'Hardcore Enabled',
     'list.hint.normal': 'Swipe Left to Delete · Right to Sort',
-    'list.empty': 'No active tasks',
-    'list.action.categorize': 'Categorize',
+    'list.empty': 'No tasks',
+    'list.action.categorize': 'Sort',
     'list.action.delete': 'Delete',
     'list.move_to': 'Move "{title}" to...',
     'list.cancel': 'Cancel',
+    'list.section.planned': 'Planned',
+    'list.section.backlog': 'Backlog / No Date',
+    'list.section.completed': 'Completed',
 
-    // Detail Modal
     'detail.title': 'Task Details',
     'detail.save': 'Save Changes',
     'detail.delete': 'Delete Task',
     'detail.created': 'Created',
     'detail.category': 'Category',
+    'detail.date': 'Planned Date',
 
-    // Stats View
     'stats.title': 'Weekly Report',
     'stats.tasks_completed': 'Tasks Completed',
     'stats.focus_score': 'Focus Score',
@@ -50,7 +50,6 @@ const translations: Record<Language, Record<string, string>> = {
     'stats.badge.title': 'Deep Work Master',
     'stats.badge.desc': 'Completed 5 Q1 tasks in a row',
 
-    // User View
     'user.guest': 'Guest User',
     'user.tier': 'Free Tier',
     'user.hardcore': 'Hardcore Mode',
@@ -60,25 +59,22 @@ const translations: Record<Language, Record<string, string>> = {
     'user.clear': 'Clear All Data',
     'user.clear.confirm': 'Are you sure you want to clear all tasks? This cannot be undone.',
     'user.install': 'Install App',
-    'user.install.desc': 'Add to Home Screen for full experience',
-    'user.version': 'Focus Matrix v1.1.0',
+    'user.install.desc': 'Add to Home Screen',
+    'user.version': 'Focus Matrix v1.2.0',
 
-    // Add Modal
     'add.title': 'New Task',
     'add.placeholder': 'What needs to be done?',
     'add.button': 'Add',
     'add.hint': '↵ Enter to save',
     
-    // Install Modal
     'install.title': 'Add to Home Screen',
-    'install.ios.step1': '1. Tap the Share button',
-    'install.ios.step2': '2. Scroll down and tap "Add to Home Screen"',
-    'install.android.step1': '1. Tap the menu icon (⋮)',
-    'install.android.step2': '2. Tap "Install App" or "Add to Home screen"',
+    'install.ios.step1': '1. Tap Share button',
+    'install.ios.step2': '2. Tap "Add to Home Screen"',
+    'install.android.step1': '1. Tap menu icon (⋮)',
+    'install.android.step2': '2. Tap "Install App"',
     'install.button.close': 'Got it',
   },
   zh: {
-    // Matrix View
     'matrix.title': '专注矩阵',
     'matrix.inbox': '收集箱',
     'matrix.empty': '空',
@@ -89,24 +85,25 @@ const translations: Record<Language, Record<string, string>> = {
     'q3.title': '授权做',
     'q4.title': '尽量做',
     
-    // List View
-    'list.title': '今日清单',
-    'list.hint.hardcore': '硬核模式已开启：禁止编辑',
+    'list.title': '清单',
+    'list.hint.hardcore': '硬核模式已开启',
     'list.hint.normal': '左滑删除 · 右滑归类',
     'list.empty': '暂无任务',
     'list.action.categorize': '归类',
     'list.action.delete': '删除',
     'list.move_to': '将 "{title}" 移动到...',
     'list.cancel': '取消',
+    'list.section.planned': '待办',
+    'list.section.backlog': '无日期 / 待定',
+    'list.section.completed': '已完成',
 
-    // Detail Modal
     'detail.title': '任务详情',
     'detail.save': '保存修改',
     'detail.delete': '删除任务',
     'detail.created': '创建时间',
     'detail.category': '所属分类',
+    'detail.date': '计划日期',
 
-    // Stats View
     'stats.title': '周报',
     'stats.tasks_completed': '完成任务',
     'stats.focus_score': '专注分',
@@ -116,7 +113,6 @@ const translations: Record<Language, Record<string, string>> = {
     'stats.badge.title': '深度工作大师',
     'stats.badge.desc': '连续完成 5 个第一象限任务',
 
-    // User View
     'user.guest': '访客用户',
     'user.tier': '免费版',
     'user.hardcore': '硬核模式',
@@ -127,15 +123,13 @@ const translations: Record<Language, Record<string, string>> = {
     'user.clear.confirm': '确定要清空所有任务吗？此操作无法撤销。',
     'user.install': '安装应用',
     'user.install.desc': '添加到主屏幕以获得最佳体验',
-    'user.version': 'Focus Matrix v1.1.0',
+    'user.version': 'Focus Matrix v1.2.0',
 
-    // Add Modal
     'add.title': '新任务',
     'add.placeholder': '准备做点什么？',
     'add.button': '添加',
     'add.hint': '↵ 回车保存',
 
-    // Install Modal
     'install.title': '添加到主屏幕',
     'install.ios.step1': '1. 点击底部“分享”按钮',
     'install.ios.step2': '2. 下滑找到并点击“添加到主屏幕”',

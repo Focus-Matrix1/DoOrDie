@@ -3,7 +3,7 @@ import { Task, CategoryId } from '../types';
 
 interface TaskContextType {
   tasks: Task[];
-  addTask: (title: string, category?: CategoryId) => void;
+  addTask: (title: string, category?: CategoryId, date?: string) => void;
   updateTask: (taskId: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>) => void;
   moveTask: (taskId: string, targetCategory: CategoryId) => void;
   completeTask: (taskId: string) => void;
@@ -12,13 +12,17 @@ interface TaskContextType {
   hardcoreMode: boolean;
   toggleHardcoreMode: () => void;
   clearAllTasks: () => void;
+  selectedDate: string;
+  setSelectedDate: (date: string) => void;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
+const getTodayString = () => new Date().toISOString().split('T')[0];
+
 const INITIAL_TASKS: Task[] = [
-  { id: '1', title: '修复支付接口', category: 'q1', createdAt: Date.now(), completed: false },
-  { id: '2', title: '学习 Swift UI', category: 'q2', createdAt: Date.now(), completed: false },
+  { id: '1', title: '修复支付接口', category: 'q1', createdAt: Date.now(), completed: false, plannedDate: getTodayString() },
+  { id: '2', title: '学习 Swift UI', category: 'q2', createdAt: Date.now(), completed: false, plannedDate: getTodayString() },
   { id: '3', title: '健身 30 分钟', category: 'q2', createdAt: Date.now(), completed: false },
   { id: '4', title: '整理发票报销', category: 'inbox', createdAt: Date.now(), completed: false },
   { id: '5', title: 'Review design assets', category: 'inbox', createdAt: Date.now(), completed: false },
@@ -28,20 +32,15 @@ const INITIAL_TASKS: Task[] = [
 export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [tasks, setTasks] = useState<Task[]>(() => {
     try {
-      // Safety check for environments where window is undefined (SSR)
       if (typeof window === 'undefined') return INITIAL_TASKS;
-
       const saved = localStorage.getItem('focus-matrix-tasks');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // CRITICAL: Ensure the parsed data is actually an array before using it
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
+        if (Array.isArray(parsed)) return parsed;
       }
       return INITIAL_TASKS;
     } catch (error) {
-      console.warn('LocalStorage load failed, falling back to initial tasks:', error);
+      console.warn('LocalStorage load failed:', error);
       return INITIAL_TASKS;
     }
   });
@@ -50,10 +49,12 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       if (typeof window === 'undefined') return false;
       return localStorage.getItem('focus-matrix-hardcore') === 'true';
-    } catch (error) {
+    } catch {
       return false;
     }
   });
+
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
 
   useEffect(() => {
     try {
@@ -71,13 +72,14 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [hardcoreMode]);
 
-  const addTask = (title: string, category: CategoryId = 'inbox') => {
+  const addTask = (title: string, category: CategoryId = 'inbox', date?: string) => {
     const newTask: Task = {
       id: Math.random().toString(36).substr(2, 9),
       title,
       category,
       createdAt: Date.now(),
       completed: false,
+      plannedDate: date
     };
     setTasks(prev => [newTask, ...prev]);
   };
@@ -91,7 +93,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const completeTask = (taskId: string) => {
-    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: true } : t));
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t));
   };
 
   const deleteTask = (taskId: string) => {
@@ -119,7 +121,9 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       getTasksByCategory,
       hardcoreMode,
       toggleHardcoreMode,
-      clearAllTasks
+      clearAllTasks,
+      selectedDate,
+      setSelectedDate
     }}>
       {children}
     </TaskContext.Provider>

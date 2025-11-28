@@ -8,7 +8,7 @@ interface AddModalProps {
 }
 
 export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
-  const { addTask } = useTasks();
+  const { addTask, selectedDate } = useTasks();
   const { t } = useLanguage();
   const [value, setValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -22,7 +22,8 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (value.trim()) {
-      addTask(value.trim());
+      // Use selectedDate from context to default the task date
+      addTask(value.trim(), 'inbox', selectedDate);
       setValue('');
       onClose();
     }
@@ -60,8 +61,9 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
                     className="w-full text-xl font-medium placeholder-gray-300 border-none focus:ring-0 p-0 mb-4 bg-transparent outline-none text-gray-900"
                 />
             </form>
-            <div className="flex gap-2 mt-2">
+            <div className="flex gap-2 mt-2 items-center">
                  <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-1 rounded-md font-medium">{t('add.hint')}</span>
+                 <span className="text-[10px] text-gray-400 ml-auto">{selectedDate}</span>
             </div>
         </div>
     </div>

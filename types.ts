@@ -7,6 +7,7 @@ export interface Task {
   category: CategoryId;
   createdAt: number;
   completed: boolean;
+  plannedDate?: string; // Format: YYYY-MM-DD
 }
 
 export type ViewState = 'matrix' | 'list' | 'stats' | 'user';
