@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { LayoutGrid, Trash2, CheckCircle2, Check, Hourglass } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -225,10 +226,25 @@ export const ListView: React.FC = () => {
   const { t } = useLanguage();
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [categorizingTask, setCategorizingTask] = useState<Task | null>(null);
+  const [showInboxZeroAnim, setShowInboxZeroAnim] = useState(false);
 
   const tasksForDate = tasks.filter(task => !task.completed && task.plannedDate === selectedDate);
-  const backlogTasks = tasks.filter(task => !task.completed && !task.plannedDate);
+  const backlogTasks = tasks.filter(task => !task.completed && task.category === 'inbox' && !task.plannedDate);
   const completedTasks = tasks.filter(task => task.completed && task.plannedDate === selectedDate);
+
+  // --- Inbox Zero Logic ---
+  const prevBacklogCount = useRef(backlogTasks.length);
+
+  useEffect(() => {
+    // Check if backlog dropped to 0 from a positive number
+    if (prevBacklogCount.current > 0 && backlogTasks.length === 0) {
+        setShowInboxZeroAnim(true);
+        const timer = setTimeout(() => setShowInboxZeroAnim(false), 2500); // Show celebration for 2.5s
+        return () => clearTimeout(timer);
+    }
+    prevBacklogCount.current = backlogTasks.length;
+  }, [backlogTasks.length]);
+  // ------------------------
 
   const sortTasks = (taskList: Task[]) => {
       const priorityOrder: Record<CategoryId, number> = { 'inbox': 0, 'q1': 1, 'q2': 2, 'q3': 3, 'q4': 4 };
@@ -252,9 +268,18 @@ export const ListView: React.FC = () => {
 
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-32 pt-4">
         
+        {/* Inbox Zero Celebration Banner */}
+        {showInboxZeroAnim && (
+            <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-4 mb-6 shadow-lg animate-bounce">
+                <p className="text-white text-center font-bold text-lg">
+                    {t('list.inbox_zero.celebrate')}
+                </p>
+            </div>
+        )}
+
         {/* Inbox / Backlog Section */}
         {sortedBacklog.length > 0 && (
-            <div className="bg-gray-50/80 rounded-2xl p-1 border border-dashed border-gray-300 mb-6">
+            <div className="bg-gray-50/80 rounded-2xl p-1 border border-dashed border-gray-300 mb-6 transition-all duration-300">
                  <div className="px-3 py-2 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-gray-400"></div>
@@ -298,7 +323,7 @@ export const ListView: React.FC = () => {
             </div>
         )}
 
-        {sortedPlanned.length === 0 && sortedBacklog.length === 0 && completedTasks.length === 0 && (
+        {sortedPlanned.length === 0 && sortedBacklog.length === 0 && completedTasks.length === 0 && !showInboxZeroAnim && (
             <div className="flex flex-col items-center justify-center pt-20 opacity-40">
                 <div className="w-16 h-16 bg-gray-200 rounded-full mb-4"></div>
                 <p className="text-sm font-bold text-gray-400">{t('list.empty')}</p>

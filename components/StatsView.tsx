@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Zap, Clock, TrendingUp, Flame } from 'lucide-react';
+import { Zap, Clock, TrendingUp, Flame, Circle } from 'lucide-react';
 import { Task, CategoryId } from '../types';
 
 // Helper to parse duration string to hours (e.g., "30m" -> 0.5)
@@ -58,15 +58,16 @@ export const StatsView: React.FC = () => {
     
     const totalDiff = last7DaysTasks.reduce((acc, t) => {
         const end = t.completedAt || Date.now();
-        // If created before completed (sanity check), add diff
         return acc + Math.max(0, end - t.createdAt);
     }, 0);
     
     const avgMs = totalDiff / velocity;
     const avgHrs = avgMs / (1000 * 60 * 60);
     
-    if (avgHrs < 1) return { val: Math.round(avgHrs * 60), unit: 'm', fast: true };
-    if (avgHrs < 24) return { val: avgHrs.toFixed(1), unit: 'h', fast: true };
+    const isEfficient = avgHrs < 4;
+    
+    if (avgHrs < 1) return { val: Math.round(avgHrs * 60), unit: 'm', fast: isEfficient };
+    if (avgHrs < 24) return { val: avgHrs.toFixed(1), unit: 'h', fast: isEfficient };
     return { val: (avgHrs / 24).toFixed(1), unit: 'd', fast: false };
   }, [last7DaysTasks, velocity]);
 
@@ -79,31 +80,22 @@ export const StatsView: React.FC = () => {
     ? `${Math.round(focusHours * 60)}m` 
     : `${focusHours.toFixed(1)}h`;
 
-  // 4. Streak (Consecutive days with at least 1 completion)
+  // 4. Streak
   const streak = useMemo(() => {
       if (completedTasks.length === 0) return 0;
-      
       const dates = new Set(completedTasks.map(t => getDateKey(t.completedAt || t.createdAt)));
       let currentStreak = 0;
       const d = new Date();
-      
-      // Check today
-      if (dates.has(getDateKey(d.getTime()))) {
-          currentStreak++;
-      }
-      // Check backwards
+      if (dates.has(getDateKey(d.getTime()))) currentStreak++;
       while (true) {
           d.setDate(d.getDate() - 1);
-          if (dates.has(getDateKey(d.getTime()))) {
-              currentStreak++;
-          } else {
-              break;
-          }
+          if (dates.has(getDateKey(d.getTime()))) currentStreak++;
+          else break;
       }
       return currentStreak;
   }, [completedTasks]);
 
-  // 5. Quadrant Distribution (Stacked Bar)
+  // 5. Quadrant Distribution (Donut Chart)
   const distribution = useMemo(() => {
     const counts = { q1: 0, q2: 0, q3: 0, q4: 0 };
     last7DaysTasks.forEach(t => {
@@ -116,7 +108,7 @@ export const StatsView: React.FC = () => {
   
   const totalDist = distribution.q1 + distribution.q2 + distribution.q3 + distribution.q4;
 
-  // 6. Trend (Minimalist Flow)
+  // 6. Trend
   const trendData = useMemo(() => {
     const last7Days = Array.from({length: 7}, (_, i) => {
       const d = new Date();
@@ -140,6 +132,35 @@ export const StatsView: React.FC = () => {
     return data.map(d => ({ ...d, heightPercent: (d.count / maxCount) * 100 }));
   }, [completedTasks, language]);
 
+  // SVG Donut Logic
+  const donutSegments = useMemo(() => {
+      if (totalDist === 0) return [{ color: 'text-gray-100', offset: 0, percent: 100 }];
+      
+      const radius = 16; // r=16
+      const circumference = 2 * Math.PI * radius; // ~100.53
+      let currentOffset = 0;
+      
+      const items = [
+          { id: 'q1', val: distribution.q1, color: 'text-rose-500' },
+          { id: 'q2', val: distribution.q2, color: 'text-blue-500' },
+          { id: 'q3', val: distribution.q3, color: 'text-amber-400' },
+          { id: 'q4', val: distribution.q4, color: 'text-slate-300' },
+      ];
+      
+      return items.filter(i => i.val > 0).map(item => {
+          const percent = (item.val / totalDist) * 100;
+          const strokeLength = (percent / 100) * circumference;
+          const segment = {
+              ...item,
+              strokeDasharray: `${strokeLength} ${circumference}`,
+              strokeDashoffset: -currentOffset,
+              percent
+          };
+          currentOffset += strokeLength;
+          return segment;
+      });
+  }, [distribution, totalDist]);
+
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F2F4F7]">
@@ -155,29 +176,24 @@ export const StatsView: React.FC = () => {
       
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 space-y-5 pb-32">
         
-        {/* Hero Card - 3D Layout */}
+        {/* Hero Card */}
         <div className="bg-white rounded-[24px] p-6 shadow-sm border border-blue-50 relative overflow-hidden">
-             {/* Background Decoration */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-50 rounded-full blur-3xl -mr-10 -mt-10 opacity-60"></div>
-
             <div className="relative z-10 flex gap-6">
-                
-                {/* Left: Velocity (Main) */}
                 <div className="flex-1 flex flex-col justify-center">
                     <span className="text-5xl font-black text-gray-900 font-['Inter'] leading-none tracking-tight">{velocity}</span>
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wide mt-2">{t('stats.tasks_completed')}</span>
                 </div>
-
-                {/* Right Column */}
-                <div className="w-[120px] flex flex-col gap-6 border-l border-gray-100 pl-6">
-                    
-                    {/* Upper: Flow Speed */}
+                <div className={`w-[140px] flex flex-col gap-6 border-l border-gray-100 pl-6 ${focusHours === 0 ? 'justify-center' : ''}`}>
                     <div className="flex flex-col">
                         {avgSpeed ? (
                             <>
-                                <div className="flex items-center gap-1 mb-0.5">
+                                <div className="flex items-baseline gap-1 mb-0.5">
                                     <span className="text-2xl font-bold text-gray-900 font-['Inter']">
                                         {avgSpeed.val}<span className="text-sm text-gray-500 ml-0.5">{avgSpeed.unit}</span>
+                                    </span>
+                                    <span className={`text-[10px] font-bold uppercase ml-1 ${avgSpeed.fast ? 'text-green-600' : 'text-amber-500'}`}>
+                                        {avgSpeed.fast ? t('stats.speed.fast') : t('stats.speed.slow')}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-1">
@@ -192,8 +208,6 @@ export const StatsView: React.FC = () => {
                             </>
                         )}
                     </div>
-
-                    {/* Lower: Focus Hours (Hide if 0 and allow Speed to take focus visually, but here just dim) */}
                     {focusHours > 0 && (
                         <div className="flex flex-col">
                             <span className="text-lg font-bold text-gray-700 font-['Inter']">
@@ -206,7 +220,7 @@ export const StatsView: React.FC = () => {
             </div>
         </div>
 
-        {/* Stacked Bar Distribution */}
+        {/* Donut Chart Distribution */}
         {totalDist > 0 && (
             <div className="bg-white rounded-[24px] p-5 shadow-sm">
                  <h3 className="text-[13px] font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -214,21 +228,65 @@ export const StatsView: React.FC = () => {
                     {t('stats.distribution')}
                 </h3>
                 
-                <div className="h-4 w-full rounded-full overflow-hidden flex">
-                    {distribution.q1 > 0 && <div className="bg-rose-500 h-full transition-all duration-500" style={{ width: `${(distribution.q1 / totalDist) * 100}%` }}></div>}
-                    {distribution.q2 > 0 && <div className="bg-blue-500 h-full transition-all duration-500" style={{ width: `${(distribution.q2 / totalDist) * 100}%` }}></div>}
-                    {distribution.q3 > 0 && <div className="bg-amber-400 h-full transition-all duration-500" style={{ width: `${(distribution.q3 / totalDist) * 100}%` }}></div>}
-                    {distribution.q4 > 0 && <div className="bg-slate-300 h-full transition-all duration-500" style={{ width: `${(distribution.q4 / totalDist) * 100}%` }}></div>}
-                </div>
-                
-                <div className="flex justify-between mt-3 px-1">
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-rose-500"></div>
-                        <span className="text-[10px] font-bold text-gray-500">Q1 {Math.round((distribution.q1 / totalDist) * 100)}%</span>
+                <div className="flex items-center justify-between">
+                    {/* Donut */}
+                    <div className="relative w-28 h-28 flex items-center justify-center shrink-0">
+                        <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                            {/* Background Ring */}
+                            {totalDist === 0 && <circle cx="18" cy="18" r="16" fill="none" className="stroke-gray-100" strokeWidth="4" />}
+                            
+                            {/* Segments */}
+                            {donutSegments.map((seg, i) => (
+                                <circle 
+                                    key={i}
+                                    cx="18" cy="18" r="16" 
+                                    fill="none" 
+                                    className={`${seg.color} transition-all duration-1000 ease-out`}
+                                    strokeWidth="4"
+                                    strokeDasharray={seg.strokeDasharray}
+                                    strokeDashoffset={seg.strokeDashoffset}
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                />
+                            ))}
+                        </svg>
+                        {/* Center Text */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span className="text-2xl font-black text-gray-900 leading-none">{totalDist}</span>
+                            <span className="text-[9px] font-bold text-gray-400 uppercase mt-0.5">Total</span>
+                        </div>
                     </div>
-                     <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        <span className="text-[10px] font-bold text-gray-500">Q2 {Math.round((distribution.q2 / totalDist) * 100)}%</span>
+
+                    {/* Legend */}
+                    <div className="flex flex-col gap-2 min-w-[120px]">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+                                <span className="text-xs font-bold text-gray-600">Q1</span>
+                            </div>
+                            <span className="text-xs font-bold text-gray-900">{Math.round((distribution.q1 / totalDist) * 100)}%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span className="text-xs font-bold text-gray-600">Q2</span>
+                            </div>
+                            <span className="text-xs font-bold text-gray-900">{Math.round((distribution.q2 / totalDist) * 100)}%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+                                <span className="text-xs font-bold text-gray-600">Q3</span>
+                            </div>
+                            <span className="text-xs font-bold text-gray-900">{Math.round((distribution.q3 / totalDist) * 100)}%</span>
+                        </div>
+                         <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+                                <span className="text-xs font-bold text-gray-600">Q4</span>
+                            </div>
+                            <span className="text-xs font-bold text-gray-900">{Math.round((distribution.q4 / totalDist) * 100)}%</span>
+                        </div>
                     </div>
                 </div>
             </div>

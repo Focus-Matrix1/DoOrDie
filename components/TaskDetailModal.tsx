@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Zap, Calendar, Users, Coffee, Clock, Trash2 } from 'lucide-react';
 import { Task, CategoryId } from '../types';
@@ -40,7 +41,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
       setPlannedDate(task.plannedDate || '');
       
       if (task.duration) {
-          const match = task.duration.match(/^(\d+)([smhd])$/);
+          const match = task.duration.match(/^([\d.]+)([smhd])$/);
           if (match) {
               setDurationVal(match[1]);
               setDurationUnit(match[2]);
@@ -122,7 +123,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
             </div>
 
             <div className="space-y-6">
-                {/* Title & Description Input */}
+                {/* Title & Description Input (Auto-save on Blur) */}
                 <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-2 focus-within:ring-2 focus-within:ring-black/5 transition-all">
                     <input 
                         type="text" 
@@ -143,7 +144,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                    {/* Date Input */}
+                    {/* Date Input (Auto-save on Change) */}
                     <div>
                         <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block px-1">{t('detail.date')}</label>
                         <input 
@@ -157,7 +158,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                         />
                     </div>
                     
-                    {/* Duration Input (Number + Unit Toggler) */}
+                    {/* Duration Input (Number Left, Unit Right) */}
                      <div>
                         <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block px-1">Duration</label>
                         <div className="flex items-center bg-gray-50 border border-gray-100 rounded-xl overflow-hidden focus-within:border-gray-300 transition-colors">
@@ -179,7 +180,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                     </div>
                 </div>
 
-                {/* Category Selection (No Inbox) */}
+                {/* Category Selection (Auto-save on Click) */}
                 <div>
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 block px-1">{t('detail.category')}</label>
                     <div className="grid grid-cols-2 gap-3">
@@ -215,7 +216,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                     <span>{t('detail.created')}: {formatDate(task.createdAt)}</span>
                 </div>
 
-                {/* Actions */}
+                {/* Actions (Delete only, no Save button) */}
                 <div className="pt-2">
                      <button 
                         onClick={handleDelete}

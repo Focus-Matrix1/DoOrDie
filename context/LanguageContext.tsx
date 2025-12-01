@@ -39,6 +39,7 @@ const translations: Record<Language, Record<string, string>> = {
     'list.section.planned': 'Planned',
     'list.section.backlog': 'Inbox / Backlog',
     'list.section.completed': 'Completed',
+    'list.inbox_zero.celebrate': 'Inbox Zero! 🎉',
 
     'detail.title': 'Task Details',
     'detail.save': 'Save Changes',
@@ -50,6 +51,8 @@ const translations: Record<Language, Record<string, string>> = {
     'stats.title': 'Insights',
     'stats.tasks_completed': 'Velocity',
     'stats.avg_speed': 'Avg Speed',
+    'stats.speed.fast': 'Efficient',
+    'stats.speed.slow': 'Dragging',
     'stats.focus_hours': 'Focus Hours',
     'stats.streak': 'Day Streak',
     'stats.trend': 'Flow Rhythm',
@@ -108,6 +111,7 @@ const translations: Record<Language, Record<string, string>> = {
     'list.section.planned': '待办',
     'list.section.backlog': '收集箱 / 待定',
     'list.section.completed': '已完成',
+    'list.inbox_zero.celebrate': '清空收集箱！🎉',
 
     'detail.title': '任务详情',
     'detail.save': '保存修改',
@@ -119,6 +123,8 @@ const translations: Record<Language, Record<string, string>> = {
     'stats.title': '洞察',
     'stats.tasks_completed': '本周产出',
     'stats.avg_speed': '平均流转',
+    'stats.speed.fast': '高效',
+    'stats.speed.slow': '拖延',
     'stats.focus_hours': '投入时长',
     'stats.streak': '连续产出',
     'stats.trend': '产出节奏',
