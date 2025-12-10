@@ -179,7 +179,7 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
 export const ProfileView: React.FC = () => {
   const { tasks } = useTasks();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const [showSettings, setShowSettings] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
 
@@ -290,7 +290,20 @@ export const ProfileView: React.FC = () => {
                  <span className="text-[11px] px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-600 border-indigo-100 font-bold">{user ? 'Pro' : t('user.tier')}</span>
              </div>
         </div>
-        <button onClick={() => setShowSettings(true)} className="p-3 bg-white rounded-full shadow-sm text-gray-600 active:scale-90 transition-transform"><Settings className="w-5 h-5" /></button>
+        
+        <div className="flex items-center gap-3">
+             {/* Accessible Language Toggle */}
+             <button 
+                onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')} 
+                className="p-3 bg-white rounded-full shadow-sm text-gray-600 active:scale-90 transition-transform"
+                title="Switch Language / 切换语言"
+             >
+                <Languages className="w-5 h-5" />
+             </button>
+             <button onClick={() => setShowSettings(true)} className="p-3 bg-white rounded-full shadow-sm text-gray-600 active:scale-90 transition-transform">
+                <Settings className="w-5 h-5" />
+             </button>
+        </div>
       </div>
       
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 space-y-4 pb-32">

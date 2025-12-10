@@ -109,10 +109,10 @@ const Quadrant: React.FC<{
     >
       <div className="px-3 pt-3 pb-1 shrink-0 pointer-events-none select-none">
         <div className="flex items-start gap-1.5 mb-0.5">
-          <div className={`${colorClass} mt-0.5 scale-90`}>{icon}</div>
-          <div className="flex flex-col">
-              <h3 className="text-[13px] font-bold leading-tight text-slate-700">{title}</h3>
-              <span className="text-[10px] font-medium text-slate-500">{subtitle}</span>
+          <div className={`${colorClass} mt-0.5 scale-90 shrink-0`}>{icon}</div>
+          <div className="flex flex-col min-w-0">
+              <h3 className="text-[13px] font-bold leading-tight text-slate-700 truncate">{title}</h3>
+              <span className="text-[10px] font-medium text-slate-500 truncate">{subtitle}</span>
           </div>
         </div>
       </div>

@@ -215,11 +215,15 @@ const translations: Record<Language, Record<string, string>> = {
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>(() => {
     try {
-      if (typeof window === 'undefined') return 'zh';
+      if (typeof window === 'undefined') return 'en';
       const saved = localStorage.getItem('focus-matrix-lang');
-      return (saved === 'zh' || saved === 'en') ? saved : 'zh';
+      if (saved === 'zh' || saved === 'en') return saved;
+      
+      // Auto-detect browser language
+      const browserLang = navigator.language.toLowerCase();
+      return browserLang.startsWith('zh') ? 'zh' : 'en';
     } catch {
-      return 'zh';
+      return 'en';
     }
   });
 
