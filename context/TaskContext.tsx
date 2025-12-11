@@ -6,7 +6,7 @@ import { GoogleGenAI } from "@google/genai";
 // The API Key is normally loaded from environment variables.
 // If you are running this locally without env vars, you can paste your key below inside the quotes.
 // Get your key at: https://aistudio.google.com/app/apikey
-const GEMINI_API_KEY = process.env.API_KEY || ""; 
+const GEMINI_API_KEY = "AIzaSyD9piPuyDV_J8-quGj3yZRq0r1se54UYOQ"; 
 // ---------------------
 
 interface TaskContextType {
