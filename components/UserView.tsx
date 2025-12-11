@@ -1,8 +1,7 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
-import { User, Settings, Zap, Clock, TrendingUp, Cloud, Languages, ShieldAlert, Trash2, X, Loader2, RefreshCw, BarChart3, CheckCircle2, Bot } from 'lucide-react';
+import { User, Settings, Zap, Clock, TrendingUp, Cloud, Languages, ShieldAlert, Trash2, X, Loader2, RefreshCw, BarChart3, CheckCircle2, Bot, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -24,7 +23,7 @@ const parseDuration = (durationStr?: string): number => {
 
 // --- Settings Modal Component ---
 const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { hardcoreMode, toggleHardcoreMode, clearAllTasks, tasks, habits, restoreTasks, aiMode, setAiMode } = useTasks();
+    const { hardcoreMode, toggleHardcoreMode, clearAllTasks, tasks, habits, restoreTasks, aiMode, setAiMode, isApiKeyMissing } = useTasks();
     const { language, setLanguage, t } = useLanguage();
     const [user, setUser] = useState<SupabaseUser | null>(null);
     const [syncing, setSyncing] = useState(false);
@@ -146,8 +145,13 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         <div className="flex items-center gap-3">
                             <Bot className="w-5 h-5 text-purple-600" />
                             <div>
-                                <span className="font-bold text-gray-700 block">{t('user.ai')}</span>
-                                <span className="text-[10px] text-gray-400 font-medium">{t('user.ai.desc')}</span>
+                                <span className="font-bold text-gray-700 block flex items-center gap-2">
+                                    {t('user.ai')}
+                                    {isApiKeyMissing && <AlertTriangle className="w-3 h-3 text-orange-500" />}
+                                </span>
+                                <span className={`text-[10px] font-medium ${isApiKeyMissing ? 'text-orange-500' : 'text-gray-400'}`}>
+                                    {isApiKeyMissing ? 'API Key Missing (Check TaskContext.tsx)' : t('user.ai.desc')}
+                                </span>
                             </div>
                         </div>
                         <div className={`w-10 h-6 rounded-full relative transition-colors ${aiMode ? 'bg-purple-600' : 'bg-gray-200'}`}><div className={`w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform ${aiMode ? 'translate-x-4' : ''}`}></div></div>

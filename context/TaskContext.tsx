@@ -2,6 +2,13 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useRe
 import { Task, CategoryId, Habit } from '../types';
 import { GoogleGenAI } from "@google/genai";
 
+// --- CONFIGURATION ---
+// The API Key is normally loaded from environment variables.
+// If you are running this locally without env vars, you can paste your key below inside the quotes.
+// Get your key at: https://aistudio.google.com/app/apikey
+const GEMINI_API_KEY = process.env.API_KEY || ""; 
+// ---------------------
+
 interface TaskContextType {
   tasks: Task[];
   addTask: (title: string, category?: CategoryId, date?: string, description?: string, duration?: string) => void;
@@ -28,6 +35,7 @@ interface TaskContextType {
   
   aiMode: boolean;
   setAiMode: (enabled: boolean) => void;
+  isApiKeyMissing: boolean;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -163,13 +171,13 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // --- AI Classification ---
   const classifyTaskWithAI = async (title: string, description?: string): Promise<{ category: CategoryId, duration?: string }> => {
-      if (!process.env.API_KEY) {
+      if (!GEMINI_API_KEY) {
           console.warn("AI Mode: No API Key provided");
           return { category: 'inbox' }; 
       }
 
       try {
-          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+          const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
           const prompt = `You are an expert productivity assistant. Classify the following task into the Eisenhower Matrix.
           
           Task: "${title}"
@@ -246,6 +254,12 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // AI Classification Background Process
     // Trigger if AI mode is ON, and user hasn't explicitly categorized it (defaults to inbox)
     if (aiMode && category === 'inbox') {
+        if (!GEMINI_API_KEY) {
+            console.warn("AI Skipped: Missing API Key");
+            // Optional: alert user or handle UI feedback here
+            return;
+        }
+
         try {
             const aiResult = await classifyTaskWithAI(title, description);
             if (aiResult.category !== 'inbox') {
@@ -423,7 +437,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <TaskContext.Provider value={{ 
       tasks, 
       addTask, 
-      updateTask,
+      updateTask, 
       moveTask,
       reorderTask,
       completeTask, 
@@ -445,7 +459,8 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addSuccessTrigger,
 
       aiMode,
-      setAiMode
+      setAiMode,
+      isApiKeyMissing: !GEMINI_API_KEY
     }}>
       {children}
     </TaskContext.Provider>
