@@ -5,7 +5,7 @@
 // ⚠️ PASTE YOUR API KEY HERE ONCE. 
 // Future code updates will generally not touch this file, preserving your key.
 // Get it here: https://aistudio.google.com/app/apikey
-export const GEMINI_API_KEY = process.env.API_KEY || ""; 
+export const GEMINI_API_KEY = "AIzaSyD9piPuyDV_J8-quGj3yZRq0r1se54UYOQ"; 
 
 // 2. Supabase Configuration (for Cloud Sync)
 export const SUPABASE_URL = 'https://pzbhluqbhpwcocqfmrcp.supabase.co';
