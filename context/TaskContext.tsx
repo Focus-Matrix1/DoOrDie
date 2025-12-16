@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { Task, CategoryId, Habit } from '../types';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
 interface TaskContextType {
   tasks: Task[];
@@ -171,39 +171,26 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       try {
           const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-          const prompt = `You are an expert productivity assistant. Classify the following task into the Eisenhower Matrix.
-          
-          Task: "${title}"
-          Additional Details: "${description || ''}"
-          
-          Definitions:
-          - q1: Urgent & Important (Crises, pressing problems, deadline-driven projects)
-          - q2: Important, Not Urgent (Prevention, relationship building, planning, recreation)
-          - q3: Urgent, Not Important (Interruptions, some calls, some mail, some reports)
-          - q4: Not Urgent, Not Important (Trivia, busy work, time wasters)
-          
-          Output Requirement:
-          - Return ONLY a valid JSON object.
-          - Do not wrap in markdown (e.g., no \`\`\`json).
-          - Estimate duration if possible (e.g. "30m", "1h").
-          
-          JSON Schema:
-          { "category": "q1" | "q2" | "q3" | "q4", "duration": string }`;
           
           const response = await ai.models.generateContent({
               model: 'gemini-2.5-flash',
-              contents: prompt,
+              contents: `Classify the task: "${title}". Description: "${description || ''}"`,
               config: {
+                systemInstruction: "You are an expert productivity assistant. Classify the task into the Eisenhower Matrix. q1: Urgent & Important, q2: Important Not Urgent, q3: Urgent Not Important, q4: Not Urgent Not Important. Estimate duration (e.g. 30m, 1h).",
                 responseMimeType: "application/json",
-                temperature: 0.1
+                responseSchema: {
+                  type: Type.OBJECT,
+                  properties: {
+                    category: { type: Type.STRING, enum: ['q1', 'q2', 'q3', 'q4', 'inbox'] },
+                    duration: { type: Type.STRING, description: "Estimated duration, e.g. '30m'" }
+                  },
+                  required: ['category']
+                }
               }
           });
           
-          let text = response.text;
+          const text = response.text;
           if (!text) return { category: 'inbox' };
-          
-          // Clean potential Markdown wrappers that might break JSON.parse
-          text = text.replace(/```json\n?|\n?```/g, '').trim();
           
           const result = JSON.parse(text);
           const cat = result.category?.toLowerCase();

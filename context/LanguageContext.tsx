@@ -21,11 +21,11 @@ const translations: Record<Language, Record<string, string>> = {
     'matrix.inbox.zero': 'Inbox Zero 🎉',
     'q1.title': 'Urgent & Important',
     'q1.subtitle': 'Crisis · Tackle',
-    'q2.title': 'Not Urgent & Important',
+    'q2.title': 'Not\u00A0Urgent & Important',
     'q2.subtitle': 'Compound · Value',
-    'q3.title': 'Urgent & Not Important',
+    'q3.title': 'Urgent & Not\u00A0Important',
     'q3.subtitle': 'Trivia · Interruption',
-    'q4.title': 'Not Urgent & Not Important',
+    'q4.title': 'Not\u00A0Urgent & Not\u00A0Important',
     'q4.subtitle': 'Relax · Reset',
     
     'list.title': 'Tasks',
@@ -218,11 +218,22 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [language, setLanguage] = useState<Language>(() => {
     try {
       if (typeof window === 'undefined') return 'en';
+      
+      // 1. Check saved preference
       const saved = localStorage.getItem('focus-matrix-lang');
       if (saved === 'zh' || saved === 'en') return saved;
       
-      // Auto-detect browser language
-      const browserLang = navigator.language.toLowerCase();
+      // 2. Check navigator.languages (array of preferred languages)
+      const nav = window.navigator;
+      if (nav.languages && nav.languages.length > 0) {
+        for (const lang of nav.languages) {
+           if (lang.toLowerCase().startsWith('zh')) return 'zh';
+           if (lang.toLowerCase().startsWith('en')) return 'en';
+        }
+      }
+      
+      // 3. Fallback to navigator.language (single)
+      const browserLang = nav.language.toLowerCase();
       return browserLang.startsWith('zh') ? 'zh' : 'en';
     } catch {
       return 'en';

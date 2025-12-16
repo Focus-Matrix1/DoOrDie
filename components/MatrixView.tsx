@@ -107,12 +107,17 @@ const Quadrant: React.FC<{
         highlighted ? 'ring-inset ring-4 ring-white/60 !bg-gray-100/90' : ''
       }`}
     >
-      <div className="px-3 pt-3 pb-1 shrink-0 pointer-events-none select-none">
-        <div className="flex items-start gap-1.5 mb-0.5">
+      <div className="px-3 pt-3 pb-2 shrink-0 pointer-events-none select-none">
+        <div className="flex items-start gap-1.5">
           <div className={`${colorClass} mt-0.5 scale-90 shrink-0`}>{icon}</div>
-          <div className="flex flex-col min-w-0">
-              <h3 className="text-[13px] font-bold leading-tight text-slate-700 truncate">{title}</h3>
-              <span className="text-[10px] font-medium text-slate-500 truncate min-w-0">{subtitle}</span>
+          <div className="flex flex-col min-w-0 flex-1">
+              {/* Added min-h-[2.5em] to force consistent 2-line height even for 1-line titles */}
+              <h3 
+                className="text-[11px] sm:text-[12px] font-bold leading-tight text-slate-700 break-words mb-0.5 text-balance min-h-[2.5em] flex items-center"
+              >
+                {title}
+              </h3>
+              <span className="text-[9px] sm:text-[10px] font-medium text-slate-500 truncate min-w-0 opacity-80 leading-tight">{subtitle}</span>
           </div>
         </div>
       </div>
@@ -173,8 +178,6 @@ export const MatrixView: React.FC = () => {
   // Drag Logic
   const handleDragStart = (task: Task, clientX: number, clientY: number, element: HTMLElement) => {
     // HARDCORE MODE RESTRICTION
-    // If Hardcore Mode is ON, users cannot drag/sort tasks that are already in quadrants.
-    // They can only drag tasks FROM the Inbox.
     if (hardcoreMode && task.category !== 'inbox') {
         if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
         // Trigger visual feedback (Shake)
@@ -214,12 +217,8 @@ export const MatrixView: React.FC = () => {
     const zone = getDropZone(e.clientX, e.clientY);
     
     if (zone) {
-        // Calculate the specific insertion index within the zone
-        // Find the scroll container for this zone
         const zoneContent = document.querySelector(`[data-zone-id="${zone}"] .task-list-container`);
         if (zoneContent) {
-            // Get all task items in this zone
-            // We use data-task-id to strictly select task elements
             const items = Array.from(zoneContent.children).filter(el => el.hasAttribute('data-task-id'));
             
             let index = items.length; // Default to end
@@ -235,7 +234,6 @@ export const MatrixView: React.FC = () => {
             }
             setDropTarget({ zone, index });
         } else {
-            // Should not happen, but safe fallback
             setDropTarget({ zone, index: 0 });
         }
     } else {
@@ -247,13 +245,11 @@ export const MatrixView: React.FC = () => {
     if (!dragItem) return;
     
     if (dropTarget) {
-        if (dropTarget.zone !== dragItem.task.category || dropTarget.index !== -1) { // -1 check is redundant but safe
+        if (dropTarget.zone !== dragItem.task.category || dropTarget.index !== -1) { 
             reorderTask(dragItem.task.id, dropTarget.zone, dropTarget.index);
             if (navigator.vibrate) navigator.vibrate(20);
         }
     } else {
-      // Logic to reopen inbox if dropped back near it (optional, handled below implicitly by not changing anything)
-      // Check if dropped near inbox or "nowhere" and it was from inbox?
       const zone = getDropZone(e.clientX, e.clientY);
       if (dragItem.task.category === 'inbox' && !zone) {
           setInboxOpen(true);
@@ -276,7 +272,6 @@ export const MatrixView: React.FC = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dragItem]);
 
   return (
@@ -398,8 +393,6 @@ export const MatrixView: React.FC = () => {
                 <div 
                   key={task.id}
                   onPointerDown={(e) => {
-                      // Immediate drag from inbox is okay, or we can use the same logic. 
-                      // Let's keep immediate drag for inbox for easier quick sorting.
                       handleDragStart(task, e.clientX, e.clientY, e.currentTarget as HTMLElement);
                   }}
                   className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm relative active:scale-95 transition-transform touch-none select-none cursor-grab active:cursor-grabbing"

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -152,7 +151,7 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         {t('user.ai')}
                                     </span>
                                     <span className={`text-[10px] font-medium ${isApiKeyMissing ? 'text-orange-500' : 'text-gray-400'}`}>
-                                        {isApiKeyMissing ? 'Configure Key in config.ts' : t('user.ai.desc')}
+                                        {isApiKeyMissing ? 'API Key Missing' : t('user.ai.desc')}
                                     </span>
                                 </div>
                             </div>
@@ -191,7 +190,17 @@ export const ProfileView: React.FC = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
 
   useEffect(() => {
+      // Initial fetch
       supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
+
+      // Real-time listener for Auth changes (Login/Logout)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+          setUser(session?.user ?? null);
+      });
+
+      return () => {
+          subscription.unsubscribe();
+      };
   }, []);
 
   const completedTasks = useMemo(() => tasks.filter(t => t.completed), [tasks]);
@@ -302,12 +311,12 @@ export const ProfileView: React.FC = () => {
              {/* Accessible Language Toggle */}
              <button 
                 onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')} 
-                className="p-3 bg-white rounded-full shadow-sm text-gray-600 active:scale-90 transition-transform"
+                className="p-3 bg-white rounded-full shadow-sm text-gray-600 active:scale-95 transition-transform"
                 title="Switch Language / 切换语言"
              >
                 <Languages className="w-5 h-5" />
              </button>
-             <button onClick={() => setShowSettings(true)} className="p-3 bg-white rounded-full shadow-sm text-gray-600 active:scale-90 transition-transform">
+             <button onClick={() => setShowSettings(true)} className="p-3 bg-white rounded-full shadow-sm text-gray-600 active:scale-95 transition-transform">
                 <Settings className="w-5 h-5" />
              </button>
         </div>
