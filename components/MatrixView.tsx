@@ -113,7 +113,7 @@ const Quadrant: React.FC<{
           <div className="flex flex-col min-w-0 flex-1">
               {/* Added min-h-[2.5em] to force consistent 2-line height even for 1-line titles */}
               <h3 
-                className="text-[11px] sm:text-[12px] font-bold leading-tight text-slate-700 break-words mb-0.5 text-balance min-h-[2.5em] flex items-center"
+                className={`text-[11px] sm:text-[12px] font-bold leading-tight break-words mb-0.5 text-balance min-h-[2.5em] flex items-center ${colorClass}`}
               >
                 {title}
               </h3>
