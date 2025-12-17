@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { Task, CategoryId, Habit } from '../types';
 import { GoogleGenAI, Type } from "@google/genai";
-import { GEMINI_API_KEY } from '../config';
 
 interface TaskContextType {
   tasks: Task[];
@@ -166,13 +165,13 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // --- AI Classification ---
   const classifyTaskWithAI = async (title: string, description?: string): Promise<{ category: CategoryId, duration?: string }> => {
-      if (!GEMINI_API_KEY) {
+      if (!process.env.API_KEY) {
           console.warn("AI Mode: No API Key provided");
           return { category: 'inbox' }; 
       }
 
       try {
-          const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+          const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
           
           const response = await ai.models.generateContent({
               model: 'gemini-2.5-flash',
@@ -236,7 +235,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // AI Classification Background Process
     // Trigger if AI mode is ON, and user hasn't explicitly categorized it (defaults to inbox)
     if (aiMode && category === 'inbox') {
-        if (!GEMINI_API_KEY) {
+        if (!process.env.API_KEY) {
             console.warn("AI Skipped: Missing API Key");
             return;
         }
@@ -441,7 +440,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       aiMode,
       setAiMode,
-      isApiKeyMissing: !GEMINI_API_KEY
+      isApiKeyMissing: !process.env.API_KEY
     }}>
       {children}
     </TaskContext.Provider>

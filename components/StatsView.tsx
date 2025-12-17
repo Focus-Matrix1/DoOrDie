@@ -1,7 +1,7 @@
 
 import React, { useState, forwardRef } from 'react';
 import { motion, useMotionValue, useTransform, AnimatePresence, useAnimation, PanInfo } from 'framer-motion';
-import { Sun, Check, Coffee, BookOpen, Dumbbell, Droplets, ArrowRight, Clock, Wind, Sparkles, Repeat, Zap } from 'lucide-react';
+import { Check, Coffee, BookOpen, Dumbbell, Droplets, Repeat, Zap, Sparkles, Wind } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Habit } from '../types';
@@ -34,36 +34,6 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 
 const getHexColor = (tailwindClass: string) => COLOR_MAP[tailwindClass] || '#6366F1';
 const getIcon = (iconName: string) => ICON_MAP[iconName] || <Sparkles size={18} />;
-
-/**
- * ------------------------------------------------------------------
- * Ambient Background Component
- * Adds breathing light effects
- * ------------------------------------------------------------------
- */
-const AmbientBackground = () => (
-  <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-    <motion.div 
-      animate={{ 
-        scale: [1, 1.2, 1],
-        opacity: [0.3, 0.5, 0.3],
-        rotate: [0, 90, 0]
-      }}
-      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-      className="absolute -top-[20%] -right-[20%] w-[600px] h-[600px] rounded-full blur-[100px]"
-      style={{ background: 'radial-gradient(circle, rgba(254,215,170,0.4) 0%, rgba(255,255,255,0) 70%)' }}
-    />
-    <motion.div 
-      animate={{ 
-        scale: [1, 1.1, 1],
-        x: [0, 50, 0],
-      }}
-      transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-      className="absolute top-[40%] -left-[20%] w-[500px] h-[500px] rounded-full blur-[80px]"
-      style={{ background: 'radial-gradient(circle, rgba(224,231,255,0.4) 0%, rgba(255,255,255,0) 70%)' }}
-    />
-  </div>
-);
 
 /**
  * ------------------------------------------------------------------
@@ -109,7 +79,7 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-      className="relative w-full mb-5 group touch-pan-y"
+      className="relative w-full mb-4 group touch-pan-y"
     >
       {/* Timeline connection line */}
       <div className="absolute left-[29px] -top-6 bottom-0 w-[1px] bg-stone-200 z-0 last:hidden" />
@@ -122,7 +92,7 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
         onDragEnd={handleDragEnd}
         animate={controls}
         whileTap={{ cursor: "grabbing" }}
-        className="relative z-10 bg-white rounded-2xl p-1 overflow-hidden shadow-[0_4px_20px_-12px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] transition-shadow duration-300 border border-stone-100"
+        className="relative z-10 bg-white rounded-2xl p-1 overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300"
       >
         {/* Progress Background Fill */}
         <motion.div 
@@ -137,7 +107,7 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
           {/* Icon / Timeline Anchor */}
           <div className="flex items-center gap-4 mr-4">
              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center border border-stone-100 bg-stone-50 text-stone-600 transition-colors group-hover:border-stone-200"
+                className="w-12 h-12 rounded-full flex items-center justify-center border border-gray-100 bg-gray-50 text-gray-500 transition-colors group-hover:border-gray-200"
                 style={{ color: hexColor }}
              >
                 {getIcon(habit.icon)}
@@ -147,20 +117,20 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
           {/* Text Content */}
           <motion.div style={{ opacity: contentOpacity }} className="flex-1">
              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
                     Daily
                 </span>
                 {habit.streak > 0 && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400 bg-orange-50 px-1.5 py-0.5 rounded flex items-center gap-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded flex items-center gap-1">
                      <span className="text-[8px]">🔥</span> {habit.streak}
                   </span>
                 )}
              </div>
-             {/* Removed font-serif to match app style */}
-             <h3 className="text-lg font-bold text-stone-900 leading-tight">
+             
+             <h3 className="text-base font-bold text-gray-900 leading-tight">
                 {habit.title}
              </h3>
-             <p className="text-xs font-medium text-stone-400 flex items-center gap-1 mt-1">
+             <p className="text-xs font-medium text-gray-400 flex items-center gap-1 mt-0.5">
                 <Repeat size={10} />
                 {habit.frequency || 'Every day'}
              </p>
@@ -168,7 +138,7 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
 
           {/* Action Indicators - Clickable Check Button */}
           <div 
-            className="relative w-10 h-10 flex items-center justify-center cursor-pointer rounded-full hover:bg-stone-50 active:scale-95 transition-all z-20"
+            className="relative w-10 h-10 flex items-center justify-center cursor-pointer rounded-full hover:bg-gray-50 active:scale-95 transition-all z-20"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
                 e.stopPropagation();
@@ -184,7 +154,7 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
              
              {/* Clickable Button - Replaces Progress Ring */}
              <motion.div style={{ opacity: useTransform(x, [0, 50], [1, 0]) }}>
-                <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-400 hover:bg-stone-200 hover:text-stone-600 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors border border-transparent hover:border-gray-300">
                     <Check size={16} strokeWidth={2.5} />
                 </div>
              </motion.div>
@@ -209,9 +179,8 @@ const CompletedItem: React.FC<{ habit: Habit }> = ({ habit }) => (
     animate={{ opacity: 1, x: 0 }}
     className="flex items-center gap-3 py-2 pl-2"
   >
-    <div className="w-1.5 h-1.5 rounded-full bg-stone-300" />
-    {/* Removed font-serif */}
-    <span className="text-sm text-stone-400 italic line-through decoration-stone-200">
+    <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+    <span className="text-sm text-gray-400 italic line-through decoration-gray-200">
         {habit.title}
     </span>
   </motion.div>
@@ -236,53 +205,24 @@ export const HabitView: React.FC = () => {
       toggleHabit(id, todayStr);
   };
 
-  // Date Formatting for Header
-  const date = new Date();
-  const dayName = date.toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'long' });
-  const dayNum = date.getDate();
-  const month = date.toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { month: 'short' });
+  // Consistent Date Formatting with Matrix View
+  const today = new Date().toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
   return (
-    <div className="min-h-full w-full bg-[#FAFAF9] text-stone-900 font-sans selection:bg-orange-100 flex justify-center overflow-hidden relative">
-      <AmbientBackground />
+    <div className="w-full h-full flex flex-col overflow-hidden relative bg-[#F5F7FA]">
       
-      <div className="w-full max-w-md h-full flex flex-col relative z-10 px-8 pt-8 pb-32">
-        
-        {/* --- Header --- */}
-        <header className="mb-10 mt-4 flex items-end justify-between border-b border-stone-200 pb-6 shrink-0">
-            <div>
-                <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="flex items-center gap-2 text-stone-400 font-medium text-xs tracking-[0.2em] uppercase mb-2"
-                >
-                    <Sun size={14} className="text-orange-400" />
-                    <span>{t('habits.today')}</span>
-                </motion.div>
-                
-                <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-baseline gap-3"
-                >
-                    {/* Removed font-serif */}
-                    <span className="text-6xl font-light tracking-tighter text-stone-800">
-                        {dayNum}
-                    </span>
-                    <div className="flex flex-col">
-                        <span className="text-xl font-medium text-stone-600 leading-none">{month}</span>
-                        <span className="text-sm text-stone-400 font-light leading-tight">{dayName}</span>
-                    </div>
-                </motion.div>
-            </div>
-        </header>
+      {/* Header - Unified with MatrixView */}
+      <div className="px-6 pt-6 pb-4 z-40 relative shrink-0 flex justify-between items-end">
+        <div className="flex flex-col items-start select-none">
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1 font-['Inter']">{today}</h2>
+          <h1 className="text-[34px] font-bold text-gray-900 leading-none tracking-tight">{t('habits.title')}</h1>
+        </div>
+      </div>
 
-        {/* --- Body: Active List --- */}
-        {/* Changed scrollbar-hide to no-scrollbar defined in index.html */}
-        <main className="flex-1 relative no-scrollbar overflow-y-auto pr-2 -mr-2">
+      {/* --- Body: Active List --- */}
+      <main className="flex-1 relative no-scrollbar overflow-y-auto px-4 pb-32">
              {/* Timeline Line */}
-             <div className="absolute left-[29px] top-0 bottom-0 w-[1px] bg-gradient-to-b from-stone-200 to-transparent z-0 opacity-50" />
+             <div className="absolute left-[37px] top-0 bottom-0 w-[1px] bg-gradient-to-b from-gray-200 to-transparent z-0 opacity-50" />
 
              <AnimatePresence mode='popLayout'>
                 {activeHabits.map(habit => (
@@ -301,39 +241,37 @@ export const HabitView: React.FC = () => {
                     animate={{ opacity: 1 }}
                     className="py-20 flex flex-col items-center justify-center text-center opacity-60"
                 >
-                    <Wind size={40} className="text-stone-300 mb-4" />
-                    {/* Removed font-serif */}
-                    <p className="text-lg text-stone-500 italic">"The day is yours."</p>
+                    <Wind size={40} className="text-gray-300 mb-4" />
+                    <p className="text-lg text-gray-500 italic">"The day is yours."</p>
                 </motion.div>
              )}
 
              {/* True Empty State (No habits created yet) */}
              {habits.length === 0 && (
                 <div className="py-20 flex flex-col items-center justify-center text-center opacity-40">
-                    <Sparkles size={32} className="text-stone-300 mb-4" />
-                    <p className="text-sm text-stone-500 font-medium">Create your first habit</p>
+                    <Sparkles size={32} className="text-gray-300 mb-4" />
+                    <p className="text-sm text-gray-500 font-medium">{t('habits.empty')}</p>
                 </div>
              )}
-        </main>
+      </main>
 
-        {/* --- Footer: Completed Archive --- */}
-        {completedHabits.length > 0 && (
-            <footer className="mt-auto pt-6 border-t border-stone-100 shrink-0">
-                <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold text-stone-300 uppercase tracking-widest">
-                        Archive
-                    </span>
-                </div>
-                <div className="min-h-[50px] space-y-1">
-                    <AnimatePresence>
-                        {completedHabits.map(habit => (
-                            <CompletedItem key={habit.id} habit={habit} />
-                        ))}
-                    </AnimatePresence>
-                </div>
-            </footer>
-        )}
-      </div>
+      {/* --- Footer: Completed Archive --- */}
+      {completedHabits.length > 0 && (
+          <footer className="px-6 pb-24 pt-6 border-t border-gray-100 shrink-0 bg-[#F5F7FA]">
+              <div className="flex items-center justify-between mb-4">
+                  <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">
+                      Archive
+                  </span>
+              </div>
+              <div className="min-h-[50px] space-y-1">
+                  <AnimatePresence>
+                      {completedHabits.map(habit => (
+                          <CompletedItem key={habit.id} habit={habit} />
+                      ))}
+                  </AnimatePresence>
+              </div>
+          </footer>
+      )}
     </div>
   );
 };
