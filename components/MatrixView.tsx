@@ -108,8 +108,11 @@ const Quadrant: React.FC<{
       }`}
     >
       <div className="px-3 pt-3 pb-2 shrink-0 pointer-events-none select-none">
-        <div className="flex items-start gap-1.5">
-          <div className={`${colorClass} mt-0.5 scale-90 shrink-0`}>{icon}</div>
+        <div className="flex items-start gap-2">
+          {/* Centered Icon Container matched to Title Height */}
+          <div className={`${colorClass} text-[11px] sm:text-[12px] h-[2.5em] flex items-center justify-center shrink-0`}>
+              <div className="scale-90">{icon}</div>
+          </div>
           <div className="flex flex-col min-w-0 flex-1">
               {/* Added min-h-[2.5em] to force consistent 2-line height even for 1-line titles */}
               <h3 
