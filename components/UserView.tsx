@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
 import { User, Settings, Zap, Clock, TrendingUp, Cloud, Languages, ShieldAlert, Trash2, X, Loader2, RefreshCw, BarChart3, CheckCircle2, Bot, AlertTriangle, Download, Smartphone, Share, MoreVertical, Flame, CalendarDays } from 'lucide-react';
@@ -25,29 +25,64 @@ const parseDuration = (durationStr?: string): number => {
 
 // --- Heatmap Component ---
 const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
+    const [tooltip, setTooltip] = useState<{ date: string, isCompleted: boolean, x: number, y: number } | null>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     
-    const heatmapData = useMemo(() => {
+    const { weeks, monthLabels } = useMemo(() => {
         const daysToShow = 91; // 13 weeks
         const result = [];
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+
+        const monthLabels: { name: string, index: number }[] = [];
+        let lastMonth = -1;
 
         for (let i = daysToShow - 1; i >= 0; i--) {
             const d = new Date(today);
             d.setDate(today.getDate() - i);
             const dateStr = d.toISOString().split('T')[0];
             const isCompleted = habit.completedDates.includes(dateStr);
-            result.push({ date: dateStr, isCompleted });
+            
+            const month = d.getMonth();
+            const weekIndex = Math.floor((daysToShow - 1 - i) / 7);
+            const dayOfWeek = (daysToShow - 1 - i) % 7;
+
+            // If it's a new month and at the start of a week column, add label
+            if (month !== lastMonth && dayOfWeek === 0) {
+                monthLabels.push({
+                    name: d.toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { month: 'short' }),
+                    index: weekIndex
+                });
+                lastMonth = month;
+            }
+
+            result.push({ date: dateStr, isCompleted, dObj: d });
         }
         
-        // Group into weeks for the "GitHub" column look
         const weeks = [];
         for (let i = 0; i < result.length; i += 7) {
             weeks.push(result.slice(i, i + 7));
         }
-        return weeks;
-    }, [habit.completedDates]);
+        return { weeks, monthLabels };
+    }, [habit.completedDates, language]);
+
+    const handleCellClick = (e: React.MouseEvent, date: string, isCompleted: boolean) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const containerRect = scrollContainerRef.current?.getBoundingClientRect() || { left: 0, top: 0 };
+        
+        // Toggle tooltip if same cell clicked
+        if (tooltip && tooltip.date === date) {
+            setTooltip(null);
+        } else {
+            setTooltip({
+                date,
+                isCompleted,
+                x: rect.left - containerRect.left + rect.width / 2,
+                y: rect.top - containerRect.top - 8
+            });
+        }
+    };
 
     return (
         <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
@@ -64,23 +99,79 @@ const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
                 )}
             </div>
             
-            <div className="overflow-x-auto no-scrollbar pb-1">
-                <div className="flex gap-[3px] min-w-max">
-                    {heatmapData.map((week, wIdx) => (
-                        <div key={wIdx} className="flex flex-col gap-[3px]">
-                            {week.map((day, dIdx) => (
-                                <div 
-                                    key={day.date}
-                                    title={day.date}
-                                    className={`w-[10px] h-[10px] rounded-[2px] transition-all duration-500 ${
-                                        day.isCompleted 
-                                            ? `${habit.color} shadow-[0_0_4px_rgba(0,0,0,0.05)]` 
-                                            : 'bg-gray-100'
-                                    }`}
-                                />
-                            ))}
+            <div className="relative">
+                <div 
+                    ref={scrollContainerRef}
+                    className="overflow-x-auto no-scrollbar pb-1 relative"
+                    onClick={() => setTooltip(null)}
+                >
+                    {/* Month Labels */}
+                    <div className="flex h-5 mb-1 relative min-w-max">
+                        {monthLabels.map((label, i) => (
+                            <span 
+                                key={i} 
+                                className="absolute text-[9px] font-bold text-gray-300 uppercase tracking-tighter"
+                                style={{ left: `${label.index * 13}px` }}
+                            >
+                                {label.name}
+                            </span>
+                        ))}
+                    </div>
+
+                    <div className="flex gap-[3px] min-w-max relative">
+                        {weeks.map((week, wIdx) => (
+                            <div key={wIdx} className="flex flex-col gap-[3px]">
+                                {week.map((day) => (
+                                    <div 
+                                        key={day.date}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleCellClick(e, day.date, day.isCompleted);
+                                        }}
+                                        className={`w-[10px] h-[10px] rounded-[2px] transition-all duration-300 cursor-pointer hover:ring-1 hover:ring-gray-300 ${
+                                            day.isCompleted 
+                                                ? `${habit.color} shadow-[0_0_4px_rgba(0,0,0,0.05)]` 
+                                                : 'bg-gray-100'
+                                        }`}
+                                    />
+                                ))}
+                            </div>
+                        ))}
+
+                        {/* Tooltip Popup */}
+                        {tooltip && (
+                            <div 
+                                className="absolute z-20 pointer-events-none transition-all duration-200"
+                                style={{ 
+                                    left: `${tooltip.x}px`, 
+                                    top: `${tooltip.y}px`,
+                                    transform: 'translate(-50%, -100%)' 
+                                }}
+                            >
+                                <div className="bg-gray-900/90 backdrop-blur-md text-white px-2 py-1.5 rounded-lg shadow-xl flex flex-col items-center min-w-[80px]">
+                                    <span className="text-[9px] font-bold text-gray-400 whitespace-nowrap">{tooltip.date}</span>
+                                    <div className="flex items-center gap-1 mt-0.5">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${tooltip.isCompleted ? 'bg-green-400' : 'bg-gray-500'}`}></div>
+                                        <span className="text-[10px] font-black whitespace-nowrap">
+                                            {tooltip.isCompleted ? (language === 'zh' ? '已达成' : 'Achieved') : (language === 'zh' ? '未达成' : 'Missed')}
+                                        </span>
+                                    </div>
+                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900/90 rotate-45"></div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Empty State Overlay */}
+                    {habit.completedDates.length === 0 && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-5">
+                            <div className="bg-white/90 backdrop-blur-sm border border-gray-100 px-3 py-1.5 rounded-full shadow-sm animate-pulse">
+                                <span className="text-[10px] font-bold text-gray-400 italic">
+                                    {language === 'zh' ? '✨ 开始你的第一天' : '✨ Start your first day'}
+                                </span>
+                            </div>
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
         </div>

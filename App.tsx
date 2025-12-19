@@ -21,8 +21,8 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-// Fixed: Inherit from Component and ensure props/state are correctly handled via the constructor to fix inheritance-related property errors
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+// Fixed: Inherit from React.Component explicitly and ensure props/state are correctly typed to fix inheritance-related property errors
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -49,6 +49,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   render() {
+    // Fixed: Accessing state via this.state correctly within the React.Component
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-screen p-8 text-center bg-[#F5F7FA]">
@@ -74,7 +75,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
       );
     }
 
-    // Fixed: props.children is now correctly recognized via inheritance from Component
+    // Fixed: Accessing children via this.props.children correctly
     return this.props.children;
   }
 }
