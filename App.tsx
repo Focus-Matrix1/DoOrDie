@@ -22,10 +22,10 @@ interface ErrorBoundaryState {
 }
 
 /**
- * ErrorBoundary class component fixed to correctly inherit from React.Component with typed props and state.
+ * ErrorBoundary class component fixed to correctly inherit from Component with typed props and state.
  */
-// Fix: Use React.Component specifically to ensure state/props inheritance is recognized by TypeScript
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+// Fix: Use the imported Component directly to ensure state/props inheritance is recognized by TypeScript
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   // Fix: Explicitly declare the state property on the class to resolve property access errors
   state: ErrorBoundaryState = {
     hasError: false,

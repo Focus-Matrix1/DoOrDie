@@ -59,56 +59,33 @@ const INITIAL_HABITS: Habit[] = [
 ];
 
 export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Persistence Hooks
   const [tasks, setTasks] = useLocalStorage<Task[]>('focus-matrix-tasks', INITIAL_TASKS);
   const [habits, setHabits] = useLocalStorage<Habit[]>('focus-matrix-habits', INITIAL_HABITS);
   const [hardcoreMode, setHardcoreMode] = useLocalStorage<boolean>('focus-matrix-hardcore', false);
   const [aiMode, setAiMode] = useLocalStorage<boolean>('focus-matrix-ai', false);
 
-  // Other State
   const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
   const [inboxShakeTrigger, setInboxShakeTrigger] = useState(0);
   const [addSuccessTrigger, setAddSuccessTrigger] = useState(0);
 
-  // Logic Hooks
   const { playSuccessSound } = useSound();
   const { classifyTaskWithAI } = useTaskClassifier();
 
-  // --- Task Actions ---
-
   const addTask = async (title: string, category: CategoryId = 'inbox', date?: string, description?: string, duration?: string) => {
     const tempId = Math.random().toString(36).substr(2, 9);
-    
-    const newTask: Task = {
-      id: tempId,
-      title,
-      description,
-      category,
-      createdAt: Date.now(),
-      completed: false,
-      plannedDate: date,
-      duration
-    };
-    
+    const newTask: Task = { id: tempId, title, description, category, createdAt: Date.now(), completed: false, plannedDate: date, duration };
     setTasks(prev => [newTask, ...prev]);
     if (category === 'inbox') setInboxShakeTrigger(prev => prev + 1);
     setAddSuccessTrigger(prev => prev + 1);
 
-    if (aiMode && category === 'inbox') {
-        if (!process.env.API_KEY) return;
-
+    if (aiMode && category === 'inbox' && process.env.API_KEY) {
         try {
             const aiResult = await classifyTaskWithAI(title, description);
             if (aiResult.category !== 'inbox') {
-                updateTask(tempId, { 
-                    category: aiResult.category,
-                    duration: duration || aiResult.duration
-                });
+                updateTask(tempId, { category: aiResult.category, duration: duration || aiResult.duration });
                 if (navigator.vibrate) navigator.vibrate(INTERACTION.VIBRATION.AI_AUTO_SORT);
             }
-        } catch (e) {
-            console.warn("AI Auto-sort failed", e);
-        }
+        } catch (e) { console.warn("AI Auto-sort failed", e); }
     }
   };
 
@@ -129,7 +106,6 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const taskAtIndex = categoryTasks[newIndex];
       const updatedTask = { ...task, category: newCategory };
       const newTasks = [...filtered];
-      
       if (taskAtIndex) {
           const indexInAll = newTasks.findIndex(t => t.id === taskAtIndex.id);
           if (indexInAll !== -1) newTasks.splice(indexInAll, 0, updatedTask);
@@ -139,9 +115,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               const lastTask = categoryTasks[categoryTasks.length - 1];
               const indexInAll = newTasks.findIndex(t => t.id === lastTask.id);
               newTasks.splice(indexInAll + 1, 0, updatedTask);
-          } else {
-              newTasks.push(updatedTask);
-          }
+          } else { newTasks.push(updatedTask); }
       }
       return newTasks;
     });
@@ -165,8 +139,6 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const deleteTask = (taskId: string) => {
     setTasks(prev => prev.filter(t => t.id !== taskId));
   };
-
-  // --- Habit Actions ---
 
   const addHabit = (title: string, color: string, frequency: string) => {
       const newHabit: Habit = {
@@ -196,32 +168,22 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (newDates.includes(todayStr)) currentStreak = 1;
           while(true) {
              checkDate.setDate(checkDate.getDate() - 1);
-             const dateStr = checkDate.toISOString().split('T')[0];
-             if (newDates.includes(dateStr)) currentStreak++;
+             // CRITICAL FIX: Use local date formatting, NOT ISOString
+             const y = checkDate.getFullYear();
+             const m = String(checkDate.getMonth() + 1).padStart(2, '0');
+             const dStr = String(checkDate.getDate()).padStart(2, '0');
+             const dateKey = `${y}-${m}-${dStr}`;
+             if (newDates.includes(dateKey)) currentStreak++;
              else break;
           }
           return { ...h, completedDates: newDates, streak: currentStreak };
       }));
   };
 
-  const deleteHabit = (habitId: string) => {
-      setHabits(prev => prev.filter(h => h.id !== habitId));
-  };
-  
-  const clearAllTasks = () => {
-    setTasks([]);
-    setHabits([]);
-  };
-
-  const restoreTasks = (data: { tasks: Task[], habits: Habit[] }) => {
-      if (data.tasks) setTasks(data.tasks);
-      if (data.habits) setHabits(data.habits);
-  };
-
-  const getTasksByCategory = (category: CategoryId) => {
-    return tasks.filter(t => t.category === category && !t.completed);
-  };
-
+  const deleteHabit = (habitId: string) => { setHabits(prev => prev.filter(h => h.id !== habitId)); };
+  const clearAllTasks = () => { setTasks([]); setHabits([]); };
+  const restoreTasks = (data: { tasks: Task[], habits: Habit[] }) => { if (data.tasks) setTasks(data.tasks); if (data.habits) setHabits(data.habits); };
+  const getTasksByCategory = (category: CategoryId) => tasks.filter(t => t.category === category && !t.completed);
   const toggleHardcoreMode = () => setHardcoreMode(prev => !prev);
 
   return (
