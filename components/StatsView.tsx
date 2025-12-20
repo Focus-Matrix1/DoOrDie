@@ -1,5 +1,5 @@
 
-import React, { useState, forwardRef } from 'react';
+import React, { useState, forwardRef, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useTransform, AnimatePresence, useAnimation, PanInfo } from 'framer-motion';
 import { Check, Coffee, BookOpen, Dumbbell, Droplets, Repeat, Zap, Sparkles, Wind, Trash2 } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
@@ -12,7 +12,6 @@ import { Habit } from '../types';
  * ------------------------------------------------------------------
  */
 
-// Map Tailwind classes from Context to Hex for motion style interpolation
 const COLOR_MAP: Record<string, string> = {
   'bg-rose-500': '#F43F5E',
   'bg-blue-500': '#3B82F6',
@@ -22,7 +21,6 @@ const COLOR_MAP: Record<string, string> = {
   'bg-indigo-500': '#6366F1',
 };
 
-// Map Icon strings from Context to Lucide Components
 const ICON_MAP: Record<string, React.ReactNode> = {
   'Book': <BookOpen size={18} />,
   'Droplet': <Droplets size={18} />,
@@ -37,49 +35,69 @@ const getIcon = (iconName: string) => ICON_MAP[iconName] || <Sparkles size={18} 
 
 /**
  * ------------------------------------------------------------------
- * Habit Card Component
- * Swipe right to complete, swipe left to delete
+ * Habit Card Component (Pure WeChat Experience)
  * ------------------------------------------------------------------
  */
 const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: string) => void; onDelete: (id: string) => void }>(({ habit, onComplete, onDelete }, ref) => {
   const x = useMotionValue(0);
   const controls = useAnimation();
-  const [isCompleted, setIsCompleted] = useState(false);
-
-  const THRESHOLD = 100;
-  const DELETE_THRESHOLD = -80;
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  const DELETE_REVEAL_WIDTH = -80; 
+  const COMPLETE_THRESHOLD = 150;
   const hexColor = getHexColor(habit.color);
 
-  // Transformations based on drag x position
-  const progressWidth = useTransform(x, [0, THRESHOLD + 50], ["0%", "100%"]);
-  const deleteProgressWidth = useTransform(x, [0, DELETE_THRESHOLD - 50], ["0%", "100%"]);
-  const checkOpacity = useTransform(x, [THRESHOLD * 0.6, THRESHOLD], [0, 1]);
-  const checkScale = useTransform(x, [THRESHOLD * 0.6, THRESHOLD], [0.5, 1.2]);
-  
-  const trashOpacity = useTransform(x, [DELETE_THRESHOLD * 0.6, DELETE_THRESHOLD], [0, 1]);
-  const trashScale = useTransform(x, [DELETE_THRESHOLD * 0.6, DELETE_THRESHOLD], [0.5, 1.1]);
+  // 透明度映射：确保左右滑动颜色互不干扰
+  const greenOpacity = useTransform(x, [0, 40], [0, 1]);
+  const redOpacity = useTransform(x, [-40, 0], [1, 0]);
 
-  const contentOpacity = useTransform(x, [DELETE_THRESHOLD, 0, THRESHOLD], [0.5, 1, 0.5]);
-  const contentScale = useTransform(x, [DELETE_THRESHOLD, 0, THRESHOLD], [0.98, 1, 0.98]);
+  // 全局收回逻辑：监听页面上的任何点击或滚动来重置状态
+  useEffect(() => {
+    if (!isMenuOpen) return;
 
-  const triggerCompletion = async () => {
-    setIsCompleted(true);
-    await controls.start({ x: 500, opacity: 0, transition: { duration: 0.35, ease: "backIn" } });
-    onComplete(habit.id);
-  };
+    const handleGlobalInteraction = (e: any) => {
+        // 如果点的不是删除按钮，直接收回
+        if (e.target.closest('.delete-btn-trigger')) return;
+        
+        controls.start({ x: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } });
+        setIsMenuOpen(false);
+    };
 
-  const triggerDeletion = async () => {
-    await controls.start({ x: -500, opacity: 0, transition: { duration: 0.35, ease: "backIn" } });
-    onDelete(habit.id);
-  };
+    window.addEventListener('mousedown', handleGlobalInteraction, true);
+    window.addEventListener('touchstart', handleGlobalInteraction, true);
+    window.addEventListener('scroll', handleGlobalInteraction, true); // 处理页面滚动
+
+    return () => {
+      window.removeEventListener('mousedown', handleGlobalInteraction, true);
+      window.removeEventListener('touchstart', handleGlobalInteraction, true);
+      window.removeEventListener('scroll', handleGlobalInteraction, true);
+    };
+  }, [isMenuOpen, controls]);
 
   const handleDragEnd = async (_: any, info: PanInfo) => {
-    if (info.offset.x > THRESHOLD) {
-      await triggerCompletion();
-    } else if (info.offset.x < DELETE_THRESHOLD) {
-      await triggerDeletion();
+    const offset = info.offset.x;
+    const velocity = info.velocity.x;
+
+    if (!isMenuOpen) {
+      if (offset < -40 || velocity < -150) {
+        // 开启删除菜单
+        await controls.start({ x: DELETE_REVEAL_WIDTH, transition: { type: 'spring', stiffness: 500, damping: 40 } });
+        setIsMenuOpen(true);
+      } else if (offset > COMPLETE_THRESHOLD) {
+        // 触发右滑完成
+        await controls.start({ x: 600, opacity: 0, transition: { duration: 0.25, ease: "easeOut" } });
+        onComplete(habit.id);
+      } else {
+        controls.start({ x: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } });
+      }
     } else {
-      controls.start({ x: 0, opacity: 1, scale: 1 });
+      // 菜单已开，只能收回或保持
+      if (offset > 20 || velocity > 150) {
+        await controls.start({ x: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } });
+        setIsMenuOpen(false);
+      } else {
+        controls.start({ x: DELETE_REVEAL_WIDTH, transition: { type: 'spring', stiffness: 500, damping: 40 } });
+      }
     }
   };
 
@@ -87,94 +105,93 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
     <motion.div
       ref={ref}
       layout
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-      className="relative w-full mb-4 group touch-pan-y"
+      className="relative w-full mb-3 overflow-hidden rounded-2xl select-none"
     >
-      {/* Timeline connection line */}
-      <div className="absolute left-[39px] -top-6 bottom-0 w-[1px] bg-stone-200 z-0 last:hidden" />
+      {/* 1. 背景底层 */}
+      <div className="absolute inset-0 z-0">
+        {/* 右滑露出：全宽绿底 */}
+        <motion.div 
+          style={{ opacity: greenOpacity }}
+          className="absolute inset-0 bg-emerald-500 flex items-center justify-start pl-8"
+        >
+          <Check size={24} className="text-white" strokeWidth={3} />
+          <span className="ml-2 text-white font-bold text-xs uppercase">完成习惯</span>
+        </motion.div>
 
-      {/* Delete Action Background (Right Side) */}
-      <div className="absolute inset-0 z-0 bg-red-500 rounded-2xl flex items-center justify-end px-6 overflow-hidden">
-        <motion.div style={{ opacity: trashOpacity, scale: trashScale }}>
-            <Trash2 className="text-white" size={24} />
+        {/* 左滑露出：全宽红底 */}
+        <motion.div 
+          style={{ opacity: redOpacity }}
+          className="absolute inset-0 bg-red-500"
+        >
+          {/* 删除按钮 */}
+          <button 
+            onClick={(e) => { e.stopPropagation(); onDelete(habit.id); }}
+            className="delete-btn-trigger absolute right-0 top-0 bottom-0 w-20 flex flex-col items-center justify-center text-white active:brightness-90 transition-all z-20"
+          >
+            <Trash2 size={22} />
+            <span className="text-[10px] font-bold mt-1">删除</span>
+          </button>
         </motion.div>
       </div>
 
+      {/* 2. 前台卡片 */}
       <motion.div
-        style={{ x, scale: contentScale }}
         drag="x"
-        dragConstraints={{ left: DELETE_THRESHOLD - 20, right: THRESHOLD + 20 }}
-        dragElastic={0.12}
+        dragDirectionLock
+        // 如果菜单开着，向右滑动的范围锁定为 0，防止误触发完成
+        dragConstraints={isMenuOpen ? { left: DELETE_REVEAL_WIDTH, right: 0 } : { left: -500, right: 600 }}
+        dragElastic={isMenuOpen ? 0.02 : 0.15} 
         onDragEnd={handleDragEnd}
         animate={controls}
-        whileTap={{ cursor: "grabbing" }}
-        className="relative z-10 bg-white rounded-2xl p-1 overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300"
+        style={{ x }}
+        className="relative z-10 bg-white border border-gray-100 rounded-2xl shadow-sm cursor-grab active:cursor-grabbing"
       >
-        {/* Progress Background Fill (Complete) */}
-        <motion.div 
-          className="absolute inset-y-0 left-0 z-0"
-          style={{ 
-            width: progressWidth,
-            backgroundColor: `${hexColor}15`, 
-          }}
-        />
-
-        <div className="relative z-10 flex items-center p-4 bg-white/80 backdrop-blur-sm rounded-xl">
-          {/* Icon / Timeline Anchor */}
-          <div className="flex items-center gap-4 mr-4">
+        <div className="flex items-center p-4">
+          <div className="mr-4">
              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center border border-gray-100 bg-gray-50 text-gray-500 transition-colors group-hover:border-gray-200"
+                className="w-11 h-11 rounded-full flex items-center justify-center bg-gray-50/50 border border-gray-50 transition-transform active:scale-90"
                 style={{ color: hexColor }}
              >
                 {getIcon(habit.icon)}
              </div>
           </div>
 
-          {/* Text Content */}
-          <motion.div style={{ opacity: contentOpacity }} className="flex-1">
+          <div className="flex-1 min-w-0">
              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                    Daily
+                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">
+                    DAILY
                 </span>
                 {habit.streak > 0 && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded flex items-center gap-1">
-                     <span className="text-[8px]">🔥</span> {habit.streak}
+                  <span className="text-[9px] font-black text-orange-500">
+                     🔥 {habit.streak}
                   </span>
                 )}
              </div>
-             
-             <h3 className="text-base font-bold text-gray-900 leading-tight">
+             <h3 className="text-[15px] font-bold text-gray-900 truncate">
                 {habit.title}
              </h3>
-             <p className="text-xs font-medium text-gray-400 flex items-center gap-1 mt-0.5">
+             <p className="text-[11px] font-medium text-gray-400 mt-0.5 flex items-center gap-1">
                 <Repeat size={10} />
-                {habit.frequency || 'Every day'}
+                每 {habit.frequency === '1d' ? '天' : habit.frequency} 一次
              </p>
-          </motion.div>
+          </div>
 
-          {/* Action Indicators - Clickable Check Button */}
+          {/* 右侧独立打卡按钮 */}
           <div 
-            className="relative w-10 h-10 flex items-center justify-center cursor-pointer rounded-full hover:bg-gray-50 active:scale-95 transition-all z-20"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-                e.stopPropagation();
-                triggerCompletion();
+            className="ml-2 w-8 h-8 flex items-center justify-center"
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              if (!isMenuOpen) {
+                controls.start({ x: 500, opacity: 0 }).then(() => onComplete(habit.id));
+              }
             }}
           >
-             <motion.div 
-                style={{ opacity: checkOpacity, scale: checkScale }}
-                className="absolute text-emerald-500"
-             >
-                <Check size={24} strokeWidth={3} />
-             </motion.div>
-             
-             <motion.div style={{ opacity: useTransform(x, [0, 50], [1, 0]) }}>
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors border border-transparent hover:border-gray-300">
-                    <Check size={16} strokeWidth={2.5} />
-                </div>
-             </motion.div>
+             <div className="w-6 h-6 rounded-full border-2 border-gray-100 flex items-center justify-center text-gray-200 hover:border-emerald-300 hover:text-emerald-500 transition-colors">
+                <Check size={14} strokeWidth={3} />
+             </div>
           </div>
         </div>
       </motion.div>
@@ -186,18 +203,18 @@ HabitCard.displayName = 'HabitCard';
 
 /**
  * ------------------------------------------------------------------
- * Completed Item (Archive Style)
+ * Habit Completed Item
  * ------------------------------------------------------------------
  */
 const CompletedItem: React.FC<{ habit: Habit }> = ({ habit }) => (
   <motion.div
     layout
-    initial={{ opacity: 0, x: -20 }}
-    animate={{ opacity: 1, x: 0 }}
-    className="flex items-center gap-3 py-2 pl-2"
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="flex items-center gap-3 py-3 px-4 bg-white/60 border border-gray-50 rounded-xl mb-2"
   >
     <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-    <span className="text-sm text-gray-400 italic line-through decoration-gray-200">
+    <span className="text-sm text-gray-400 font-medium line-through decoration-gray-200">
         {habit.title}
     </span>
   </motion.div>
@@ -205,7 +222,7 @@ const CompletedItem: React.FC<{ habit: Habit }> = ({ habit }) => (
 
 /**
  * ------------------------------------------------------------------
- * Main Habit View
+ * Habit View
  * ------------------------------------------------------------------
  */
 export const HabitView: React.FC = () => {
@@ -213,37 +230,24 @@ export const HabitView: React.FC = () => {
   const { t, language } = useLanguage();
 
   const todayStr = new Date().toISOString().split('T')[0];
-  
-  // Separate Active vs Completed based on today's date
   const activeHabits = habits.filter(h => !h.completedDates.includes(todayStr));
   const completedHabits = habits.filter(h => h.completedDates.includes(todayStr));
 
-  const handleComplete = (id: string) => {
-      toggleHabit(id, todayStr);
+  const handleComplete = (id: string) => toggleHabit(id, todayStr);
+  const handleDelete = (id: string) => { 
+    if (window.confirm(t('habits.delete_confirm'))) deleteHabit(id); 
   };
 
-  const handleDelete = (id: string) => {
-      if (window.confirm(t('habits.delete_confirm'))) {
-          deleteHabit(id);
-      }
-  };
-
-  // Consistent Date Formatting with Matrix View
   const today = new Date().toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden relative bg-[#F5F7FA]">
-      
-      {/* Header - Unified with MatrixView */}
-      <div className="px-6 pt-6 pb-4 z-40 relative shrink-0 flex justify-between items-end">
-        <div className="flex flex-col items-start select-none">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1 font-['Inter']">{today}</h2>
-          <h1 className="text-[34px] font-bold text-gray-900 leading-none tracking-tight">{t('habits.title')}</h1>
-        </div>
+      <div className="px-6 pt-10 pb-4 shrink-0">
+        <h2 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-1">{today}</h2>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">{t('habits.title')}</h1>
       </div>
 
-      {/* --- Body: Active List --- */}
-      <main className="flex-1 relative no-scrollbar overflow-y-auto px-4 pb-32">
+      <main className="flex-1 overflow-y-auto no-scrollbar px-4 pb-32">
              <AnimatePresence mode='popLayout'>
                 {activeHabits.map(habit => (
                     <HabitCard 
@@ -255,42 +259,18 @@ export const HabitView: React.FC = () => {
                 ))}
              </AnimatePresence>
 
-             {/* Empty State / All Done */}
              {activeHabits.length === 0 && habits.length > 0 && (
-                <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="py-20 flex flex-col items-center justify-center text-center opacity-60"
-                >
-                    <Wind size={40} className="text-gray-300 mb-4" />
-                    <p className="text-lg text-gray-500 italic">"The day is yours."</p>
-                </motion.div>
-             )}
-
-             {/* True Empty State (No habits created yet) */}
-             {habits.length === 0 && (
-                <div className="py-20 flex flex-col items-center justify-center text-center opacity-40">
-                    <Sparkles size={32} className="text-gray-300 mb-4" />
-                    <p className="text-sm text-gray-500 font-medium">{t('habits.empty')}</p>
+                <div className="py-20 flex flex-col items-center justify-center opacity-40">
+                    <Wind size={32} className="text-gray-200 mb-2" />
+                    <p className="text-sm font-bold text-gray-400">今日已全部达成</p>
                 </div>
              )}
       </main>
 
-      {/* --- Footer: Completed Archive --- */}
       {completedHabits.length > 0 && (
-          <footer className="px-6 pb-24 pt-6 border-t border-gray-100 shrink-0 bg-[#F5F7FA]">
-              <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">
-                      Archive
-                  </span>
-              </div>
-              <div className="min-h-[50px] space-y-1">
-                  <AnimatePresence>
-                      {completedHabits.map(habit => (
-                          <CompletedItem key={habit.id} habit={habit} />
-                      ))}
-                  </AnimatePresence>
-              </div>
+          <footer className="px-6 pb-28 pt-4 border-t border-gray-100 bg-white/40 backdrop-blur-md">
+              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">今日已完成</h4>
+              {completedHabits.map(habit => <CompletedItem key={habit.id} habit={habit} />)}
           </footer>
       )}
     </div>
