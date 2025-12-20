@@ -150,11 +150,13 @@ const SwipeableTask: React.FC<{
             animate={controls}
             style={{ x }}
             onTap={() => { if(menuSide === 'none') onClick(task); else retract(); }}
-            className={`relative z-10 bg-white shadow-sm border border-gray-100 flex items-center gap-3 ${
-                isInbox ? 'p-3 rounded-xl' : `p-4 rounded-2xl`
+            className={`relative z-10 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.02)] border border-gray-100 flex items-center gap-3 ${
+                isInbox ? 'p-3 rounded-xl' : `py-4 pr-4 pl-5 rounded-2xl`
             }`}
         >
-            {!isInbox && <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${config.bg}`}></div>}
+            {!isInbox && (
+                <div className={`absolute left-1.5 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full ${config.bg}`}></div>
+            )}
             
             <motion.div 
                 className={`checkbox-area ${isInbox ? 'w-4 h-4' : 'w-5 h-5 mt-0.5'} rounded-md border-[1.5px] flex items-center justify-center shrink-0 transition-all ${

@@ -1,4 +1,4 @@
-import React, { Component, useState, useEffect, ReactNode, ErrorInfo } from 'react';
+import React, { useState, useEffect, ReactNode, ErrorInfo } from 'react';
 import { TaskProvider, useTasks } from './context/TaskContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { MatrixView } from './components/MatrixView';
@@ -23,7 +23,7 @@ interface ErrorBoundaryState {
 /**
  * ErrorBoundary class component fixed to correctly inherit from Component with typed props and state.
  */
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
