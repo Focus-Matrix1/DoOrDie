@@ -1,6 +1,7 @@
+
 import React, { useState, forwardRef } from 'react';
 import { motion, useMotionValue, useTransform, AnimatePresence, useAnimation, PanInfo } from 'framer-motion';
-import { Check, Coffee, BookOpen, Dumbbell, Droplets, Repeat, Zap, Sparkles, Wind } from 'lucide-react';
+import { Check, Coffee, BookOpen, Dumbbell, Droplets, Repeat, Zap, Sparkles, Wind, Trash2 } from 'lucide-react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Habit } from '../types';
@@ -37,35 +38,46 @@ const getIcon = (iconName: string) => ICON_MAP[iconName] || <Sparkles size={18} 
 /**
  * ------------------------------------------------------------------
  * Habit Card Component
- * Swipe right to complete interaction
+ * Swipe right to complete, swipe left to delete
  * ------------------------------------------------------------------
  */
-const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: string) => void }>(({ habit, onComplete }, ref) => {
+const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: string) => void; onDelete: (id: string) => void }>(({ habit, onComplete, onDelete }, ref) => {
   const x = useMotionValue(0);
   const controls = useAnimation();
   const [isCompleted, setIsCompleted] = useState(false);
 
   const THRESHOLD = 100;
+  const DELETE_THRESHOLD = -80;
   const hexColor = getHexColor(habit.color);
 
   // Transformations based on drag x position
   const progressWidth = useTransform(x, [0, THRESHOLD + 50], ["0%", "100%"]);
+  const deleteProgressWidth = useTransform(x, [0, DELETE_THRESHOLD - 50], ["0%", "100%"]);
   const checkOpacity = useTransform(x, [THRESHOLD * 0.6, THRESHOLD], [0, 1]);
   const checkScale = useTransform(x, [THRESHOLD * 0.6, THRESHOLD], [0.5, 1.2]);
   
-  const contentOpacity = useTransform(x, [0, THRESHOLD], [1, 0.5]);
-  const contentScale = useTransform(x, [0, THRESHOLD], [1, 0.98]);
+  const trashOpacity = useTransform(x, [DELETE_THRESHOLD * 0.6, DELETE_THRESHOLD], [0, 1]);
+  const trashScale = useTransform(x, [DELETE_THRESHOLD * 0.6, DELETE_THRESHOLD], [0.5, 1.1]);
+
+  const contentOpacity = useTransform(x, [DELETE_THRESHOLD, 0, THRESHOLD], [0.5, 1, 0.5]);
+  const contentScale = useTransform(x, [DELETE_THRESHOLD, 0, THRESHOLD], [0.98, 1, 0.98]);
 
   const triggerCompletion = async () => {
     setIsCompleted(true);
-    // Animate off screen to the right
     await controls.start({ x: 500, opacity: 0, transition: { duration: 0.35, ease: "backIn" } });
     onComplete(habit.id);
+  };
+
+  const triggerDeletion = async () => {
+    await controls.start({ x: -500, opacity: 0, transition: { duration: 0.35, ease: "backIn" } });
+    onDelete(habit.id);
   };
 
   const handleDragEnd = async (_: any, info: PanInfo) => {
     if (info.offset.x > THRESHOLD) {
       await triggerCompletion();
+    } else if (info.offset.x < DELETE_THRESHOLD) {
+      await triggerDeletion();
     } else {
       controls.start({ x: 0, opacity: 1, scale: 1 });
     }
@@ -80,25 +92,32 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
       exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
       className="relative w-full mb-4 group touch-pan-y"
     >
-      {/* Timeline connection line - Positioned to align with icon center */}
+      {/* Timeline connection line */}
       <div className="absolute left-[39px] -top-6 bottom-0 w-[1px] bg-stone-200 z-0 last:hidden" />
+
+      {/* Delete Action Background (Right Side) */}
+      <div className="absolute inset-0 z-0 bg-red-500 rounded-2xl flex items-center justify-end px-6 overflow-hidden">
+        <motion.div style={{ opacity: trashOpacity, scale: trashScale }}>
+            <Trash2 className="text-white" size={24} />
+        </motion.div>
+      </div>
 
       <motion.div
         style={{ x, scale: contentScale }}
         drag="x"
-        dragConstraints={{ left: 0, right: THRESHOLD + 20 }}
+        dragConstraints={{ left: DELETE_THRESHOLD - 20, right: THRESHOLD + 20 }}
         dragElastic={0.12}
         onDragEnd={handleDragEnd}
         animate={controls}
         whileTap={{ cursor: "grabbing" }}
         className="relative z-10 bg-white rounded-2xl p-1 overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300"
       >
-        {/* Progress Background Fill */}
+        {/* Progress Background Fill (Complete) */}
         <motion.div 
-          className="absolute inset-0 z-0"
+          className="absolute inset-y-0 left-0 z-0"
           style={{ 
             width: progressWidth,
-            backgroundColor: `${hexColor}15`, // 15 = low opacity hex
+            backgroundColor: `${hexColor}15`, 
           }}
         />
 
@@ -151,7 +170,6 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
                 <Check size={24} strokeWidth={3} />
              </motion.div>
              
-             {/* Clickable Button - Replaces Progress Ring */}
              <motion.div style={{ opacity: useTransform(x, [0, 50], [1, 0]) }}>
                 <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors border border-transparent hover:border-gray-300">
                     <Check size={16} strokeWidth={2.5} />
@@ -191,7 +209,7 @@ const CompletedItem: React.FC<{ habit: Habit }> = ({ habit }) => (
  * ------------------------------------------------------------------
  */
 export const HabitView: React.FC = () => {
-  const { habits, toggleHabit } = useTasks();
+  const { habits, toggleHabit, deleteHabit } = useTasks();
   const { t, language } = useLanguage();
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -202,6 +220,12 @@ export const HabitView: React.FC = () => {
 
   const handleComplete = (id: string) => {
       toggleHabit(id, todayStr);
+  };
+
+  const handleDelete = (id: string) => {
+      if (window.confirm(t('habits.delete_confirm'))) {
+          deleteHabit(id);
+      }
   };
 
   // Consistent Date Formatting with Matrix View
@@ -220,13 +244,13 @@ export const HabitView: React.FC = () => {
 
       {/* --- Body: Active List --- */}
       <main className="flex-1 relative no-scrollbar overflow-y-auto px-4 pb-32">
-             {/* Note: Global timeline line removed to avoid repetition with per-habit connector lines */}
              <AnimatePresence mode='popLayout'>
                 {activeHabits.map(habit => (
                     <HabitCard 
                         key={habit.id} 
                         habit={habit} 
                         onComplete={handleComplete} 
+                        onDelete={handleDelete}
                     />
                 ))}
              </AnimatePresence>

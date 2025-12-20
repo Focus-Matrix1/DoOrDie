@@ -21,8 +21,8 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-// Fixed: Inherit from React.Component explicitly and ensure props/state are correctly typed to fix inheritance-related property errors
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+// Fixed: Inherit from Component explicitly and ensure props/state are correctly typed to fix inheritance-related property errors
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
