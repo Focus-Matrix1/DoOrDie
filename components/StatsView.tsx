@@ -35,7 +35,7 @@ const getIcon = (iconName: string) => ICON_MAP[iconName] || <Sparkles size={18} 
 
 /**
  * ------------------------------------------------------------------
- * Habit Card Component (Pure WeChat Experience)
+ * Habit Card Component (Gesture Robust)
  * ------------------------------------------------------------------
  */
 const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: string) => void; onDelete: (id: string) => void }>(({ habit, onComplete, onDelete }, ref) => {
@@ -47,26 +47,19 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
   const COMPLETE_THRESHOLD = 150;
   const hexColor = getHexColor(habit.color);
 
-  // 透明度映射：确保左右滑动颜色互不干扰
   const greenOpacity = useTransform(x, [0, 40], [0, 1]);
   const redOpacity = useTransform(x, [-40, 0], [1, 0]);
 
-  // 全局收回逻辑：监听页面上的任何点击或滚动来重置状态
   useEffect(() => {
     if (!isMenuOpen) return;
-
     const handleGlobalInteraction = (e: any) => {
-        // 如果点的不是删除按钮，直接收回
         if (e.target.closest('.delete-btn-trigger')) return;
-        
         controls.start({ x: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } });
         setIsMenuOpen(false);
     };
-
     window.addEventListener('mousedown', handleGlobalInteraction, true);
     window.addEventListener('touchstart', handleGlobalInteraction, true);
-    window.addEventListener('scroll', handleGlobalInteraction, true); // 处理页面滚动
-
+    window.addEventListener('scroll', handleGlobalInteraction, true);
     return () => {
       window.removeEventListener('mousedown', handleGlobalInteraction, true);
       window.removeEventListener('touchstart', handleGlobalInteraction, true);
@@ -80,18 +73,15 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
 
     if (!isMenuOpen) {
       if (offset < -40 || velocity < -150) {
-        // 开启删除菜单
         await controls.start({ x: DELETE_REVEAL_WIDTH, transition: { type: 'spring', stiffness: 500, damping: 40 } });
         setIsMenuOpen(true);
       } else if (offset > COMPLETE_THRESHOLD) {
-        // 触发右滑完成
         await controls.start({ x: 600, opacity: 0, transition: { duration: 0.25, ease: "easeOut" } });
         onComplete(habit.id);
       } else {
         controls.start({ x: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } });
       }
     } else {
-      // 菜单已开，只能收回或保持
       if (offset > 20 || velocity > 150) {
         await controls.start({ x: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } });
         setIsMenuOpen(false);
@@ -110,40 +100,34 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
       exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
       className="relative w-full mb-3 overflow-hidden rounded-2xl select-none"
     >
-      {/* 1. 背景底层 */}
       <div className="absolute inset-0 z-0">
-        {/* 右滑露出：全宽绿底 */}
         <motion.div 
           style={{ opacity: greenOpacity }}
           className="absolute inset-0 bg-emerald-500 flex items-center justify-start pl-8"
         >
           <Check size={24} className="text-white" strokeWidth={3} />
-          <span className="ml-2 text-white font-bold text-xs uppercase">完成习惯</span>
+          <span className="ml-2 text-white font-bold text-xs uppercase">完成</span>
         </motion.div>
 
-        {/* 左滑露出：全宽红底 */}
         <motion.div 
           style={{ opacity: redOpacity }}
           className="absolute inset-0 bg-red-500"
         >
-          {/* 删除按钮 */}
-          <button 
-            onClick={(e) => { e.stopPropagation(); onDelete(habit.id); }}
+          <motion.button 
+            onTap={() => onDelete(habit.id)}
             className="delete-btn-trigger absolute right-0 top-0 bottom-0 w-20 flex flex-col items-center justify-center text-white active:brightness-90 transition-all z-20"
           >
             <Trash2 size={22} />
             <span className="text-[10px] font-bold mt-1">删除</span>
-          </button>
+          </motion.button>
         </motion.div>
       </div>
 
-      {/* 2. 前台卡片 */}
       <motion.div
         drag="x"
         dragDirectionLock
-        // 如果菜单开着，向右滑动的范围锁定为 0，防止误触发完成
         dragConstraints={isMenuOpen ? { left: DELETE_REVEAL_WIDTH, right: 0 } : { left: -500, right: 600 }}
-        dragElastic={isMenuOpen ? 0.02 : 0.15} 
+        dragElastic={isMenuOpen ? 0.02 : 0.08} 
         onDragEnd={handleDragEnd}
         animate={controls}
         style={{ x }}
@@ -152,7 +136,7 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
         <div className="flex items-center p-4">
           <div className="mr-4">
              <div 
-                className="w-11 h-11 rounded-full flex items-center justify-center bg-gray-50/50 border border-gray-50 transition-transform active:scale-90"
+                className="w-11 h-11 rounded-full flex items-center justify-center bg-gray-50/50 border border-gray-50"
                 style={{ color: hexColor }}
              >
                 {getIcon(habit.icon)}
@@ -179,20 +163,19 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
              </p>
           </div>
 
-          {/* 右侧独立打卡按钮 */}
-          <div 
-            className="ml-2 w-8 h-8 flex items-center justify-center"
-            onClick={(e) => { 
+          <motion.div 
+            className="ml-2 w-10 h-10 flex items-center justify-center active:scale-90"
+            onTap={(e) => { 
               e.stopPropagation(); 
               if (!isMenuOpen) {
                 controls.start({ x: 500, opacity: 0 }).then(() => onComplete(habit.id));
               }
             }}
           >
-             <div className="w-6 h-6 rounded-full border-2 border-gray-100 flex items-center justify-center text-gray-200 hover:border-emerald-300 hover:text-emerald-500 transition-colors">
+             <div className="w-6 h-6 rounded-full border-2 border-gray-100 flex items-center justify-center text-gray-200">
                 <Check size={14} strokeWidth={3} />
              </div>
-          </div>
+          </motion.div>
         </div>
       </motion.div>
     </motion.div>
@@ -201,11 +184,6 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
 
 HabitCard.displayName = 'HabitCard';
 
-/**
- * ------------------------------------------------------------------
- * Habit Completed Item
- * ------------------------------------------------------------------
- */
 const CompletedItem: React.FC<{ habit: Habit }> = ({ habit }) => (
   <motion.div
     layout
@@ -220,11 +198,6 @@ const CompletedItem: React.FC<{ habit: Habit }> = ({ habit }) => (
   </motion.div>
 );
 
-/**
- * ------------------------------------------------------------------
- * Habit View
- * ------------------------------------------------------------------
- */
 export const HabitView: React.FC = () => {
   const { habits, toggleHabit, deleteHabit } = useTasks();
   const { t, language } = useLanguage();
@@ -234,9 +207,7 @@ export const HabitView: React.FC = () => {
   const completedHabits = habits.filter(h => h.completedDates.includes(todayStr));
 
   const handleComplete = (id: string) => toggleHabit(id, todayStr);
-  const handleDelete = (id: string) => { 
-    if (window.confirm(t('habits.delete_confirm'))) deleteHabit(id); 
-  };
+  const handleDelete = (id: string) => deleteHabit(id);
 
   const today = new Date().toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
@@ -244,7 +215,7 @@ export const HabitView: React.FC = () => {
     <div className="w-full h-full flex flex-col overflow-hidden relative bg-[#F5F7FA]">
       <div className="px-6 pt-10 pb-4 shrink-0">
         <h2 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-1">{today}</h2>
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">{t('habits.title')}</h1>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">习惯追踪</h1>
       </div>
 
       <main className="flex-1 overflow-y-auto no-scrollbar px-4 pb-32">
