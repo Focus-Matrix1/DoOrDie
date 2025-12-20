@@ -12,7 +12,7 @@ import { LAYOUT, ANIMATION_DURATIONS } from '../constants';
 
 /**
  * ------------------------------------------------------------------
- * Swipeable Task Component (Optimized for Gesture Precision)
+ * Swipeable Task Component (Fixed Visual Logic)
  * ------------------------------------------------------------------
  */
 const SwipeableTask: React.FC<{ 
@@ -32,26 +32,28 @@ const SwipeableTask: React.FC<{
   const isInbox = task.category === 'inbox';
   const isLocked = hardcoreMode && !isInbox;
 
-  const blueOpacity = useTransform(x, [0, 40], [0, 1]);
-  const redOpacity = useTransform(x, [-40, 0], [1, 0]);
+  // Correcting the overlap: Blue only shows when x > 0, Red only when x < 0
+  const blueOpacity = useTransform(x, [0, 20], [0, 1]);
+  const redOpacity = useTransform(x, [-20, 0], [1, 0]);
 
-  // Handle global retract to close menus when clicking elsewhere
+  const retract = (instant = false) => {
+    controls.start({ x: 0, transition: instant ? { duration: 0.1 } : { type: 'spring', stiffness: 500, damping: 40 } });
+    setMenuSide('none');
+  };
+
   useEffect(() => {
     if (menuSide === 'none') return;
     const handleGlobalInteraction = (e: any) => {
         if (e.target.closest('.action-btn-trigger')) return;
-        controls.start({ x: 0, transition: { type: 'spring', stiffness: 500, damping: 40 } });
-        setMenuSide('none');
+        retract();
     };
     window.addEventListener('touchstart', handleGlobalInteraction, true);
     window.addEventListener('mousedown', handleGlobalInteraction, true);
-    window.addEventListener('scroll', handleGlobalInteraction, true);
     return () => {
       window.removeEventListener('touchstart', handleGlobalInteraction, true);
       window.removeEventListener('mousedown', handleGlobalInteraction, true);
-      window.removeEventListener('scroll', handleGlobalInteraction, true);
     };
-  }, [menuSide, controls]);
+  }, [menuSide]);
 
   const handleDragEnd = async (_: any, info: PanInfo) => {
     if (isLocked) { controls.start({ x: 0 }); return; }
@@ -71,8 +73,7 @@ const SwipeableTask: React.FC<{
     } else {
         const shouldClose = (menuSide === 'right' && offset > 20) || (menuSide === 'left' && offset < -20);
         if (shouldClose || Math.abs(velocity) > 150) {
-            await controls.start({ x: 0 });
-            setMenuSide('none');
+            retract();
         } else {
             await controls.start({ x: menuSide === 'right' ? -ACTION_WIDTH : ACTION_WIDTH });
         }
@@ -89,28 +90,52 @@ const SwipeableTask: React.FC<{
   const config = categoryConfig[task.category] || categoryConfig.inbox;
 
   return (
-    <div className="relative w-full mb-3 overflow-hidden rounded-2xl select-none">
+    <div className="relative w-full mb-3 overflow-visible rounded-2xl select-none">
         {/* Background Action Layer */}
-        <div className="absolute inset-0 z-0">
-            {/* Left Action (Blue) */}
-            <motion.div style={{ opacity: blueOpacity }} className="absolute inset-0 bg-blue-500">
+        <div className="absolute inset-0 z-0 overflow-hidden rounded-2xl">
+            {/* Left Action (Blue) - Only visible when swiping RIGHT (x > 0) */}
+            <motion.div 
+                style={{ 
+                  opacity: blueOpacity, 
+                  pointerEvents: menuSide === 'left' ? 'auto' : 'none',
+                  zIndex: menuSide === 'left' ? 30 : 0 
+                }} 
+                className="absolute inset-0 bg-blue-600"
+            >
                 <motion.button 
-                    onTap={() => onCategorize(task)}
-                    className="action-btn-trigger absolute left-0 top-0 bottom-0 w-20 flex flex-col items-center justify-center text-white active:brightness-90 transition-all"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onTap={(e) => { 
+                      onCategorize(task); 
+                      retract(true); 
+                    }}
+                    whileTap={{ backgroundColor: '#1d4ed8', scale: 0.95 }}
+                    className="action-btn-trigger absolute left-0 top-0 bottom-0 w-20 flex flex-col items-center justify-center text-white"
                 >
-                    <LayoutGrid size={22} />
-                    <span className="text-[10px] font-bold mt-1">归类</span>
+                    <LayoutGrid size={22} strokeWidth={2.5} />
+                    <span className="text-[11px] font-black mt-1 uppercase tracking-tighter">归类</span>
                 </motion.button>
             </motion.div>
 
-            {/* Right Action (Red) */}
-            <motion.div style={{ opacity: redOpacity }} className="absolute inset-0 bg-red-500">
+            {/* Right Action (Red) - Only visible when swiping LEFT (x < 0) */}
+            <motion.div 
+                style={{ 
+                  opacity: redOpacity, 
+                  pointerEvents: menuSide === 'right' ? 'auto' : 'none',
+                  zIndex: menuSide === 'right' ? 30 : 0 
+                }} 
+                className="absolute inset-0 bg-red-600"
+            >
                 <motion.button 
-                    onTap={() => onDelete(task.id)}
-                    className="action-btn-trigger absolute right-0 top-0 bottom-0 w-20 flex flex-col items-center justify-center text-white active:brightness-90 transition-all"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onTap={(e) => { 
+                      onDelete(task.id); 
+                      retract(true); 
+                    }}
+                    whileTap={{ backgroundColor: '#b91c1c', scale: 0.95 }}
+                    className="action-btn-trigger absolute right-0 top-0 bottom-0 w-20 flex flex-col items-center justify-center text-white"
                 >
-                    <Trash2 size={22} />
-                    <span className="text-[10px] font-bold mt-1">删除</span>
+                    <Trash2 size={22} strokeWidth={2.5} />
+                    <span className="text-[11px] font-black mt-1 uppercase tracking-tighter">删除</span>
                 </motion.button>
             </motion.div>
         </div>
@@ -119,19 +144,13 @@ const SwipeableTask: React.FC<{
         <motion.div
             drag={isLocked ? false : "x"}
             dragDirectionLock
-            dragConstraints={
-                menuSide === 'right' ? { left: -ACTION_WIDTH, right: 0 } :
-                menuSide === 'left' ? { left: 0, right: ACTION_WIDTH } :
-                { left: -500, right: 500 }
-            }
+            dragConstraints={{ left: -ACTION_WIDTH, right: ACTION_WIDTH }}
             dragElastic={0.08}
             onDragEnd={handleDragEnd}
             animate={controls}
             style={{ x }}
-            // CRITICAL FIX: Use onTap instead of onClick. 
-            // onTap ignores interactions where the user has dragged (moved) their finger.
-            onTap={() => { if(menuSide === 'none') onClick(task); }}
-            className={`relative z-10 bg-white shadow-sm border border-gray-100 flex items-center gap-3 transition-transform ${
+            onTap={() => { if(menuSide === 'none') onClick(task); else retract(); }}
+            className={`relative z-10 bg-white shadow-sm border border-gray-100 flex items-center gap-3 ${
                 isInbox ? 'p-3 rounded-xl' : `p-4 rounded-2xl`
             }`}
         >
@@ -291,7 +310,13 @@ export const ListView: React.FC = () => {
       </div>
 
       {editingTask && <TaskDetailModal task={editingTask} onClose={() => setEditingTask(null)} onUpdate={updateTask} onDelete={deleteTask} t={t} />}
-      {categorizingTask && <CategorySheet task={categorizingTask} onClose={() => setCategorizingTask(null)} onMove={(id, cat) => updateTask(id, { category: cat })} />}
+      {categorizingTask && (
+        <CategorySheet 
+          task={categorizingTask} 
+          onClose={() => setCategorizingTask(null)} 
+          onMove={(id, cat) => updateTask(id, { category: cat })} 
+        />
+      )}
     </div>
   );
 };

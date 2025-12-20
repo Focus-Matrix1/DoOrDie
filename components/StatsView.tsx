@@ -33,6 +33,14 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 const getHexColor = (tailwindClass: string) => COLOR_MAP[tailwindClass] || '#6366F1';
 const getIcon = (iconName: string) => ICON_MAP[iconName] || <Sparkles size={18} />;
 
+// Shared date helper to match TaskContext.tsx
+const getLocalDateString = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 /**
  * ------------------------------------------------------------------
  * Habit Card Component (Gesture Robust)
@@ -202,7 +210,8 @@ export const HabitView: React.FC = () => {
   const { habits, toggleHabit, deleteHabit } = useTasks();
   const { t, language } = useLanguage();
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  // FIX: Use local date string instead of toISOString
+  const todayStr = getLocalDateString();
   const activeHabits = habits.filter(h => !h.completedDates.includes(todayStr));
   const completedHabits = habits.filter(h => h.completedDates.includes(todayStr));
 

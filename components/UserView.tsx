@@ -23,6 +23,13 @@ const parseDuration = (durationStr?: string): number => {
   }
 };
 
+const getLocalDateStr = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 // --- Heatmap Component ---
 const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
     const { t, language } = useLanguage();
@@ -41,14 +48,15 @@ const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
         for (let i = daysToShow - 1; i >= 0; i--) {
             const d = new Date(today);
             d.setDate(today.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
+            
+            // CRITICAL FIX: Use local date string instead of toISOString to match TaskContext storage
+            const dateStr = getLocalDateStr(d);
             const isCompleted = habit.completedDates.includes(dateStr);
             
             const month = d.getMonth();
             const weekIndex = Math.floor((daysToShow - 1 - i) / 7);
             const dayOfWeek = (daysToShow - 1 - i) % 7;
 
-            // If it's a new month and at the start of a week column, add label
             if (month !== lastMonth && dayOfWeek === 0) {
                 monthLabels.push({
                     name: d.toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { month: 'short' }),
@@ -71,7 +79,6 @@ const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const containerRect = scrollContainerRef.current?.getBoundingClientRect() || { left: 0, top: 0 };
         
-        // Toggle tooltip if same cell clicked
         if (tooltip && tooltip.date === date) {
             setTooltip(null);
         } else {
@@ -105,7 +112,6 @@ const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
                     className="overflow-x-auto no-scrollbar pb-1 relative"
                     onClick={() => setTooltip(null)}
                 >
-                    {/* Month Labels */}
                     <div className="flex h-5 mb-1 relative min-w-max">
                         {monthLabels.map((label, i) => (
                             <span 
@@ -138,7 +144,6 @@ const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
                             </div>
                         ))}
 
-                        {/* Tooltip Popup */}
                         {tooltip && (
                             <div 
                                 className="absolute z-20 pointer-events-none transition-all duration-200"
@@ -162,7 +167,6 @@ const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
                         )}
                     </div>
 
-                    {/* Empty State Overlay */}
                     {habit.completedDates.length === 0 && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-5">
                             <div className="bg-white/90 backdrop-blur-sm border border-gray-100 px-3 py-1.5 rounded-full shadow-sm animate-pulse">
@@ -425,14 +429,10 @@ export const ProfileView: React.FC = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
 
   useEffect(() => {
-      // Initial fetch
       supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
-
-      // Real-time listener for Auth changes (Login/Logout)
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
           setUser(session?.user ?? null);
       });
-
       return () => {
           subscription.unsubscribe();
       };
@@ -440,9 +440,6 @@ export const ProfileView: React.FC = () => {
 
   const completedTasks = useMemo(() => tasks.filter(t => t.completed), [tasks]);
 
-  // --- Statistics Calculation ---
-
-  // 1. Last 7 Days Range
   const last7DaysTasks = useMemo(() => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
@@ -450,14 +447,11 @@ export const ProfileView: React.FC = () => {
     return completedTasks.filter(t => (t.completedAt || t.createdAt) >= sevenDaysAgo.getTime());
   }, [completedTasks]);
 
-  // 2. Velocity
   const velocity = last7DaysTasks.length;
 
-  // 3. Focus Hours
   const focusHours = useMemo(() => last7DaysTasks.reduce((acc, t) => acc + parseDuration(t.duration), 0), [last7DaysTasks]);
   const displayFocusHours = focusHours < 1 ? `${Math.round(focusHours * 60)}m` : `${focusHours.toFixed(1)}h`;
   
-  // 4. Distribution (Donut Data)
   const distribution = useMemo(() => {
     const counts = { q1: 0, q2: 0, q3: 0, q4: 0 };
     last7DaysTasks.forEach(t => { if (counts[t.category as keyof typeof counts] !== undefined) counts[t.category as keyof typeof counts]++; });
@@ -485,19 +479,17 @@ export const ProfileView: React.FC = () => {
       });
   }, [distribution, totalDist]);
 
-  // 5. Weekly Trend (Bar Chart Data)
   const weeklyTrend = useMemo(() => {
       const days = [];
       const now = new Date();
       for (let i = 6; i >= 0; i--) {
           const d = new Date(now);
           d.setDate(d.getDate() - i);
-          const dayStr = d.toLocaleDateString('en-US', { weekday: 'narrow' }); // M, T, W
-          const dateKey = d.toISOString().split('T')[0];
-          // Count completed on this day
+          const dayStr = d.toLocaleDateString('en-US', { weekday: 'narrow' });
+          const dateKey = getLocalDateStr(d);
           const count = completedTasks.filter(t => {
               if (!t.completedAt) return false;
-              const tDate = new Date(t.completedAt).toISOString().split('T')[0];
+              const tDate = getLocalDateStr(new Date(t.completedAt));
               return tDate === dateKey;
           }).length;
           days.push({ day: dayStr, count });
@@ -507,14 +499,12 @@ export const ProfileView: React.FC = () => {
 
   const maxDaily = Math.max(...weeklyTrend.map(d => d.count), 1);
 
-  // 6. Completion Rate
   const completionRate = useMemo(() => {
       const total = tasks.length;
       if (total === 0) return 0;
       return Math.round((tasks.filter(t => t.completed).length / total) * 100);
   }, [tasks]);
 
-  // 7. Best Day
   const bestDay = useMemo(() => {
       if (completedTasks.length === 0) return '-';
       const daysMap: Record<string, number> = {};
@@ -530,7 +520,6 @@ export const ProfileView: React.FC = () => {
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F2F4F7] relative">
-      {/* Header */}
       <div className="px-6 pt-10 pb-6 shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-4">
              <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center text-white shadow-lg border-4 border-white">
@@ -557,8 +546,6 @@ export const ProfileView: React.FC = () => {
       </div>
       
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 space-y-4 pb-32">
-        
-        {/* Main Stats Card */}
         <div className="bg-white rounded-[24px] p-6 shadow-sm relative overflow-hidden">
              <div className="flex gap-6">
                 <div className="flex-1">
@@ -588,7 +575,6 @@ export const ProfileView: React.FC = () => {
             </div>
         </div>
 
-        {/* Weekly Trend Bar Chart */}
         <div className="bg-white rounded-[24px] p-5 shadow-sm">
             <h3 className="text-[13px] font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-gray-500" />
@@ -614,7 +600,6 @@ export const ProfileView: React.FC = () => {
             </div>
         </div>
 
-        {/* Distribution Card */}
         <div className="bg-white rounded-[24px] p-5 shadow-sm flex items-center justify-between">
             <div>
                  <h3 className="text-[13px] font-bold text-gray-900 mb-2">{t('stats.distribution')}</h3>
@@ -633,7 +618,6 @@ export const ProfileView: React.FC = () => {
             </div>
         </div>
 
-        {/* Habit Consistency Heatmaps */}
         {habits.length > 0 && (
             <div className="space-y-3">
                 <h3 className="text-[13px] font-bold text-gray-900 ml-1 flex items-center gap-2">
