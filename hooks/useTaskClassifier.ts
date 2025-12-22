@@ -1,16 +1,19 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { CategoryId } from "../types";
+import { GEMINI_API_KEY } from "../config";
 
 export const useTaskClassifier = () => {
   const classifyTaskWithAI = async (title: string, description?: string): Promise<{ category: CategoryId, duration?: string }> => {
-    if (!process.env.API_KEY) {
-      console.warn("AI Mode: No API Key provided");
+    // Check the centralized configuration
+    if (!GEMINI_API_KEY) {
+      console.warn("AI Mode: No API Key configured in config.ts");
       return { category: 'inbox' }; 
     }
 
     try {
-      // Create instance right before API call per guidelines
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      // Create instance using the key from config.ts
+      const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
       
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',

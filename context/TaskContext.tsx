@@ -6,6 +6,7 @@ import { useTaskClassifier } from '../hooks/useTaskClassifier';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useLanguage } from './LanguageContext';
 import { INTERACTION } from '../constants';
+import { GEMINI_API_KEY } from '../config';
 
 interface TaskContextType {
   tasks: Task[];
@@ -87,7 +88,8 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (category === 'inbox') setInboxShakeTrigger(prev => prev + 1);
     setAddSuccessTrigger(prev => prev + 1);
 
-    if (aiMode && category === 'inbox' && process.env.API_KEY) {
+    // Use centralized key check
+    if (aiMode && category === 'inbox' && GEMINI_API_KEY) {
         try {
             const aiResult = await classifyTaskWithAI(title, description);
             if (aiResult.category !== 'inbox') {
@@ -202,7 +204,7 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       selectedDate, setSelectedDate,
       inboxShakeTrigger, addSuccessTrigger,
       aiMode, setAiMode,
-      isApiKeyMissing: !process.env.API_KEY
+      isApiKeyMissing: !GEMINI_API_KEY
     }}>
       {children}
     </TaskContext.Provider>

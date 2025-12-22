@@ -251,12 +251,24 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                              </div>
                         ) : ( <button onClick={() => setShowAuth(true)} className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200">Login to Sync</button> )}
                     </div>
+                    
                     <div className="bg-white border border-gray-100 p-4 rounded-2xl space-y-4">
                          <div onClick={() => setAiMode(!aiMode)} className="flex items-center justify-between cursor-pointer">
-                            <div className="flex items-center gap-3"><Bot className="w-5 h-5 text-purple-600" /><div><span className="font-bold text-gray-700 block flex items-center gap-2">{t('user.ai')}</span><span className={`text-[10px] font-medium ${isApiKeyMissing ? 'text-orange-500' : 'text-gray-400'}`}>{isApiKeyMissing ? 'API Key Missing' : t('user.ai.desc')}</span></div></div>
-                            <div className={`w-10 h-6 rounded-full relative transition-colors ${aiMode ? 'bg-purple-600' : 'bg-gray-200'}`}><div className={`w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform ${aiMode ? 'translate-x-4' : ''}`}></div></div>
+                            <div className="flex items-center gap-3">
+                                <Bot className="w-5 h-5 text-purple-600" />
+                                <div>
+                                    <span className="font-bold text-gray-700 block flex items-center gap-2">{t('user.ai')}</span>
+                                    <span className={`text-[10px] font-medium ${isApiKeyMissing ? 'text-orange-500' : 'text-gray-400'}`}>
+                                        {isApiKeyMissing ? 'API Key Missing' : t('user.ai.desc')}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className={`w-10 h-6 rounded-full relative transition-colors ${aiMode ? 'bg-purple-600' : 'bg-gray-200'}`}>
+                                <div className={`w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform ${aiMode ? 'translate-x-4' : ''}`}></div>
+                            </div>
                         </div>
                     </div>
+
                     <div onClick={() => setShowInstallGuide(true)} className="flex items-center justify-between bg-white border border-gray-100 p-4 rounded-2xl active:bg-gray-50 cursor-pointer group"><div className="flex items-center gap-3"><Smartphone className="w-5 h-5 text-gray-500 group-hover:text-black transition-colors" /><span className="font-bold text-gray-700 group-hover:text-black transition-colors">{t('user.install')}</span></div><Download className="w-4 h-4 text-gray-300 group-hover:text-black transition-colors" /></div>
                     <div onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')} className="flex items-center justify-between bg-white border border-gray-100 p-4 rounded-2xl active:bg-gray-50 cursor-pointer"><div className="flex items-center gap-3"><Languages className="w-5 h-5 text-gray-500" /><span className="font-bold text-gray-700">{t('user.language')}</span></div><span className="font-bold text-gray-900">{language === 'en' ? 'English' : '中文'}</span></div>
                     <div onClick={toggleHardcoreMode} className="flex items-center justify-between bg-white border border-gray-100 p-4 rounded-2xl active:bg-gray-50 cursor-pointer"><div className="flex items-center gap-3"><ShieldAlert className="w-5 h-5 text-rose-500" /><span className="font-bold text-gray-700">{t('user.hardcore')}</span></div><div className={`w-10 h-6 rounded-full relative transition-colors ${hardcoreMode ? 'bg-rose-500' : 'bg-gray-200'}`}><div className={`w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform ${hardcoreMode ? 'translate-x-4' : ''}`}></div></div></div>
