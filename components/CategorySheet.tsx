@@ -26,13 +26,13 @@ export const CategorySheet: React.FC<CategorySheetProps> = ({ task, onClose, onM
       <div 
           className="fixed inset-0 z-[100] flex items-end justify-center select-none"
       >
-          {/* Backdrop */}
+          {/* Backdrop - Updated to bg-black/20 for light gray appearance */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
           />
 
           {/* Sheet */}
@@ -48,7 +48,7 @@ export const CategorySheet: React.FC<CategorySheetProps> = ({ task, onClose, onM
 
               <div className="flex justify-between items-center mb-8">
                   <div className="flex flex-col">
-                      <span className="text-[12px] font-black text-gray-400 uppercase tracking-widest mb-1">快速分类</span>
+                      <span className="text-[12px] font-black text-gray-400 uppercase tracking-widest mb-1">{t('category.sheet.title')}</span>
                       <span className="text-[18px] font-bold text-gray-900 truncate max-w-[240px]">
                           {task.title}
                       </span>

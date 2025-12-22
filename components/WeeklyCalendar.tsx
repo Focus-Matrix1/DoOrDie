@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -68,13 +69,13 @@ export const WeeklyCalendar: React.FC = () => {
 
   return (
     <div className="bg-white pb-4 pt-2 px-2 select-none">
-        <div className="flex justify-between items-center mb-4 px-4">
+        <div className="flex justify-between items-center mb-4 px-4 max-w-[375px] mx-auto">
              <h2 className="text-sm font-bold text-gray-900">{weekTitle}</h2>
         </div>
         
         <div 
             ref={calendarRef}
-            className="flex justify-between items-center px-2 touch-pan-y"
+            className="flex justify-between items-center px-2 touch-pan-y max-w-[375px] mx-auto"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
         >

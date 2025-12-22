@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Zap, Calendar, Users, Coffee, Clock, Trash2, ShieldAlert } from 'lucide-react';
 import { Task, CategoryId } from '../types';
 import { useTasks } from '../context/TaskContext';
+import { useLanguage } from '../context/LanguageContext';
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -16,6 +17,7 @@ const UNITS = ['m', 'h', 'd', 's'];
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose, onUpdate, onDelete, t }) => {
   const { hardcoreMode } = useTasks();
+  const { language } = useLanguage();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<CategoryId>('q1');
@@ -120,16 +122,17 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
   };
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString();
+    return new Date(timestamp).toLocaleString(language === 'zh' ? 'zh-CN' : 'en-US');
   };
 
   return (
+    // Fixed: Updated background to bg-black/20 for lighter gray contrast
     <div 
-        className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-end sm:items-center sm:justify-center animate-fade-in"
+        className="fixed inset-0 z-[100] bg-black/20 backdrop-blur-sm flex items-end justify-center animate-fade-in"
         onClick={onClose}
     >
         <div 
-            className="w-full sm:max-w-md bg-white rounded-t-[32px] sm:rounded-[32px] p-6 pb-safe shadow-2xl slide-up"
+            className="w-full bg-white rounded-t-[32px] p-6 pb-safe shadow-2xl slide-up"
             onClick={(e) => e.stopPropagation()}
         >
             <div className="flex justify-between items-center mb-6">
@@ -265,6 +268,5 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                 </div>
             </div>
         </div>
-    </div>
-  );
+    );
 };

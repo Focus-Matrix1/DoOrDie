@@ -115,7 +115,7 @@ const SwipeableTask: React.FC<{
                     className="action-btn-trigger absolute left-0 top-0 bottom-0 w-20 flex flex-col items-center justify-center text-white"
                 >
                     <LayoutGrid size={22} strokeWidth={2.5} />
-                    <span className="text-[11px] font-black mt-1 uppercase tracking-tighter">归类</span>
+                    <span className="text-[11px] font-black mt-1 uppercase tracking-tighter">{t('list.action.categorize')}</span>
                 </motion.button>
             </motion.div>
 
@@ -138,7 +138,7 @@ const SwipeableTask: React.FC<{
                     className="action-btn-trigger absolute right-0 top-0 bottom-0 w-20 flex flex-col items-center justify-center text-white"
                 >
                     <Trash2 size={22} strokeWidth={2.5} />
-                    <span className="text-[11px] font-black mt-1 uppercase tracking-tighter">删除</span>
+                    <span className="text-[11px] font-black mt-1 uppercase tracking-tighter">{t('list.action.delete')}</span>
                 </motion.button>
             </motion.div>
         </div>
@@ -177,7 +177,7 @@ const SwipeableTask: React.FC<{
                 {!isInbox && (
                     <div className="flex items-center gap-2 mt-2">
                         <span className={`px-2 py-0.5 rounded text-[11px] font-bold tracking-tight ${config.badgeBg} ${config.text}`}>
-                            {(({inbox: '收集箱', q1:'Q1', q2:'Q2', q3:'Q3', q4:'Q4'} as any)[task.category])}
+                            {(({inbox: t('matrix.inbox'), q1:'Q1', q2:'Q2', q3:'Q3', q4:'Q4'} as any)[task.category])}
                         </span>
                         {(task.duration || task.description) && <div className="h-1 w-1 rounded-full bg-gray-300"></div>}
                         {task.duration && <span className={`flex items-center gap-1 text-[12px] font-medium ${config.text.replace('700', '600')}`}><Hourglass className="w-3 h-3" /> {task.duration}</span>}
@@ -237,7 +237,7 @@ export const ListView: React.FC = () => {
                  <div className="px-3 py-2 flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
                         <Inbox className="w-4 h-4 text-gray-400" />
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">收集箱</span>
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('list.header.inbox')}</span>
                     </div>
                     <span className="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-md font-bold">{sortedInbox.length}</span>
                 </div>
@@ -262,7 +262,7 @@ export const ListView: React.FC = () => {
             <div className="mb-6 space-y-1">
                 <div className="px-3 py-2 flex items-center gap-2 mb-2">
                     <div className="w-2 h-2 rounded-full bg-black"></div>
-                    <span className="text-xs font-bold text-gray-900 uppercase tracking-wider">今日计划</span>
+                    <span className="text-xs font-bold text-gray-900 uppercase tracking-wider">{t('list.header.today')}</span>
                 </div>
                 {sortedActive.map(task => (
                     <SwipeableTask 
@@ -283,7 +283,7 @@ export const ListView: React.FC = () => {
             <div className="mb-6">
                 <button onClick={() => setIsCompletedExpanded(!isCompletedExpanded)} className="flex items-center gap-2 mb-3 ml-1 group">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-widest group-hover:text-gray-600 transition-colors">
-                        已完成 ({completedTasks.length})
+                        {t('list.header.completed')} ({completedTasks.length})
                     </span>
                     {isCompletedExpanded ? <ChevronDown className="w-3 h-3 text-gray-400" /> : <ChevronRight className="w-3 h-3 text-gray-400" />}
                 </button>

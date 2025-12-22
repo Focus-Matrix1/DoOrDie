@@ -73,6 +73,7 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
+    // Updated background to bg-black/20 for lighter gray appearance
     <div 
         className="fixed inset-0 z-[80] bg-black/20 backdrop-blur-sm flex items-end animate-fade-in"
         onClick={onClose}

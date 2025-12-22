@@ -223,8 +223,9 @@ export const MatrixView: React.FC = () => {
         ))}
       </div>
 
+      {/* Updated overlay background to gray-500/30 */}
       <div 
-        className={`absolute inset-0 z-[60] bg-black/40 backdrop-blur-sm transition-opacity duration-${ANIMATION_DURATIONS.MODAL_TRANSITION} ${isInboxOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`absolute inset-0 z-[60] bg-gray-500/30 backdrop-blur-sm transition-opacity duration-${ANIMATION_DURATIONS.MODAL_TRANSITION} ${isInboxOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setInboxOpen(false)}
       ></div>
       

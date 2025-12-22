@@ -35,7 +35,9 @@ const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     
     const { weeks, monthLabels } = useMemo(() => {
-        const daysToShow = 91; 
+        // Increased from 91 to 168 (24 weeks) to better fit wider screens (iPhone Pro Max / Desktop Sim)
+        // 24 weeks * 13px (10px dot + 3px gap) approx 312px width, plus month labels
+        const daysToShow = 168; 
         const result = [];
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -111,7 +113,7 @@ const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
                                     <span className="text-[9px] font-bold text-gray-400 whitespace-nowrap">{tooltip.date}</span>
                                     <div className="flex items-center gap-1 mt-0.5">
                                         <div className={`w-1.5 h-1.5 rounded-full ${tooltip.isCompleted ? 'bg-green-400' : 'bg-gray-500'}`}></div>
-                                        <span className="text-[10px] font-black whitespace-nowrap">{tooltip.isCompleted ? (language === 'zh' ? '已达成' : 'Achieved') : (language === 'zh' ? '未达成' : 'Missed')}</span>
+                                        <span className="text-[10px] font-black whitespace-nowrap">{tooltip.isCompleted ? t('stats.habit.heatmap.achieved') : t('stats.habit.heatmap.missed')}</span>
                                     </div>
                                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900/90 rotate-45"></div>
                                 </div>
@@ -121,7 +123,7 @@ const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
                     {habit.completedDates.length === 0 && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-5">
                             <div className="bg-white/90 backdrop-blur-sm border border-gray-100 px-3 py-1.5 rounded-full shadow-sm animate-pulse">
-                                <span className="text-[10px] font-bold text-gray-400 italic">{language === 'zh' ? '✨ 开始你的第一天' : '✨ Start your first day'}</span>
+                                <span className="text-[10px] font-bold text-gray-400 italic">{t('stats.habit.heatmap.start')}</span>
                             </div>
                         </div>
                     )}
@@ -135,7 +137,9 @@ const InstallGuide: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { t } = useLanguage();
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     return (
-        <div className="fixed inset-0 z-[130] bg-black/60 backdrop-blur-md flex items-center justify-center p-4" onClick={onClose}>
+        // Updated background to gray-500/30
+        <div className="fixed inset-0 z-[130] bg-gray-500/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+            {/* Removed sm: styling to behave correctly in container */}
             <div className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl slide-up space-y-6" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center">
                     <h3 className="text-xl font-bold text-gray-900">{t('user.install')}</h3>
@@ -215,7 +219,8 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     if (showAuth) {
         return (
-            <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+            // Updated background to gray-500/30
+            <div className="fixed inset-0 z-[120] bg-gray-500/30 backdrop-blur-sm flex items-center justify-center p-4">
                 <div className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl slide-up">
                      <div className="flex justify-between items-center mb-8">
                         <h3 className="text-2xl font-bold text-gray-900">{isLoginMode ? t('auth.login') : t('auth.signup')}</h3>
@@ -234,8 +239,10 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
 
     return (
-        <div className="fixed inset-0 z-[110] bg-black/10 backdrop-blur-sm flex items-end sm:items-center sm:justify-center p-4" onClick={onClose}>
-            <div className="bg-white w-full max-w-sm rounded-[32px] p-6 shadow-2xl slide-up h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        // Changed to Bottom Sheet style for consistency within Phone Container
+        // Updated background to gray-500/30
+        <div className="fixed inset-0 z-[110] bg-gray-500/30 backdrop-blur-sm flex items-end justify-center" onClick={onClose}>
+            <div className="bg-white w-full rounded-t-[32px] p-6 shadow-2xl slide-up h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold text-gray-900">{t('profile.settings')}</h3>
                     <button onClick={onClose} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200"><X className="w-5 h-5 text-gray-500" /></button>
@@ -332,13 +339,13 @@ export const ProfileView: React.FC = () => {
       for (let i = 6; i >= 0; i--) {
           const d = new Date(now);
           d.setDate(d.getDate() - i);
-          const dayStr = d.toLocaleDateString('en-US', { weekday: 'narrow' });
+          const dayStr = d.toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'narrow' });
           const dateKey = getLocalDateStr(d);
           const count = completedTasks.filter(t => t.completedAt && getLocalDateStr(new Date(t.completedAt)) === dateKey).length;
           days.push({ day: dayStr, count });
       }
       return days;
-  }, [completedTasks]);
+  }, [completedTasks, language]);
 
   const maxDaily = Math.max(...weeklyTrend.map(d => d.count), 1);
   const completionRate = tasks.length === 0 ? 0 : Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100);

@@ -86,6 +86,7 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
   };
 
   const displayTitle = habit.translationKey ? t(habit.translationKey) : habit.title;
+  const frequencyText = habit.frequency === '1d' ? t('habits.freq.day') : habit.frequency;
 
   return (
     <motion.div
@@ -101,7 +102,7 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
           className="absolute inset-0 bg-emerald-500 flex items-center justify-start pl-8"
         >
           <Check size={24} className="text-white" strokeWidth={3} />
-          <span className="ml-2 text-white font-bold text-xs uppercase">完成</span>
+          <span className="ml-2 text-white font-bold text-xs uppercase">{t('list.action.complete')}</span>
         </motion.div>
         <motion.div 
           style={{ opacity: redOpacity }}
@@ -112,7 +113,7 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
             className="delete-btn-trigger absolute right-0 top-0 bottom-0 w-20 flex flex-col items-center justify-center text-white active:brightness-90 transition-all z-20"
           >
             <Trash2 size={22} />
-            <span className="text-[10px] font-bold mt-1">删除</span>
+            <span className="text-[10px] font-bold mt-1">{t('list.action.delete')}</span>
           </motion.button>
         </motion.div>
       </div>
@@ -138,11 +139,14 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
           </div>
           <div className="flex-1 min-w-0">
              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">DAILY</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">{t('habits.daily_badge')}</span>
                 {habit.streak > 0 && <span className="text-[9px] font-black text-orange-500">🔥 {habit.streak}</span>}
              </div>
              <h3 className="text-[15px] font-bold text-gray-900 truncate">{displayTitle}</h3>
-             <p className="text-[11px] font-medium text-gray-400 mt-0.5 flex items-center gap-1"><Repeat size={10} />每 {habit.frequency === '1d' ? '天' : habit.frequency} 一次</p>
+             <p className="text-[11px] font-medium text-gray-400 mt-0.5 flex items-center gap-1">
+                 <Repeat size={10} />
+                 {`${t('habits.freq.every')}${frequencyText}${t('habits.freq.suffix')}`}
+             </p>
           </div>
           <motion.div 
             className="ml-2 w-10 h-10 flex items-center justify-center active:scale-90"
@@ -193,7 +197,7 @@ export const HabitView: React.FC = () => {
     <div className="w-full h-full flex flex-col overflow-hidden relative bg-[#F5F7FA]">
       <div className="px-6 pt-10 pb-4 shrink-0">
         <h2 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-1">{todayLabel}</h2>
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">习惯追踪</h1>
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight">{t('habits.title')}</h1>
       </div>
       <main className="flex-1 overflow-y-auto no-scrollbar px-4 pb-32">
              <AnimatePresence>
@@ -210,13 +214,13 @@ export const HabitView: React.FC = () => {
              {activeHabits.length === 0 && habits.length > 0 && (
                 <div className="py-20 flex flex-col items-center justify-center opacity-40">
                     <Wind size={32} className="text-gray-200 mb-2" />
-                    <p className="text-sm font-bold text-gray-400">今日已全部达成</p>
+                    <p className="text-sm font-bold text-gray-400">{t('habits.all_done')}</p>
                 </div>
              )}
       </main>
       {completedHabits.length > 0 && (
           <footer className="px-6 pb-28 pt-4 border-t border-gray-100 bg-white/40 backdrop-blur-md">
-              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">今日已完成</h4>
+              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">{t('habits.completed_section')}</h4>
               {completedHabits.map(habit => <CompletedItem key={habit.id} habit={habit} t={t} />)}
           </footer>
       )}

@@ -1,4 +1,4 @@
-import React, { Component, useState, useEffect, ReactNode, ErrorInfo } from 'react';
+import React, { useState, useEffect, ReactNode, ErrorInfo, Component } from 'react';
 import { TaskProvider, useTasks } from './context/TaskContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { MatrixView } from './components/MatrixView';
@@ -24,13 +24,10 @@ interface ErrorBoundaryState {
  * ErrorBoundary class component fixed to correctly inherit from Component with typed props and state.
  */
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = {
-      hasError: false,
-      error: null
-    };
-  }
+  public state: ErrorBoundaryState = {
+    hasError: false,
+    error: null
+  };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
@@ -139,7 +136,8 @@ const AppContent: React.FC = () => {
 
   return (
     // Desktop Container Wrapper
-    <div className="w-full h-[100dvh] bg-[#F5F7FA] sm:bg-[#121212] sm:flex sm:items-center sm:justify-center overflow-hidden">
+    // Changed sm:bg-[#121212] to sm:bg-gray-200 (#E5E7EB) for better visibility
+    <div className="w-full h-[100dvh] bg-[#F5F7FA] sm:bg-gray-200 sm:flex sm:items-center sm:justify-center overflow-hidden">
         {/* Mobile Device Simulation Container */}
         <div 
             className="w-full h-full sm:w-[430px] sm:h-[92vh] sm:max-h-[932px] sm:rounded-[44px] bg-[#F5F7FA] sm:shadow-[0_0_0_12px_#1c1c1e,0_0_0_14px_#3a3a3c,0_40px_80px_-15px_rgba(0,0,0,0.8)] overflow-hidden text-gray-900 relative flex flex-col transition-all duration-300 transform-gpu"
