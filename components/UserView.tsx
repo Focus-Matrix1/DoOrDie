@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
-import { User, Settings, Zap, Clock, TrendingUp, Cloud, Languages, ShieldAlert, Trash2, X, Loader2, RefreshCw, BarChart3, CheckCircle2, Bot, AlertTriangle, Download, Smartphone, Share, MoreVertical, Flame, CalendarDays } from 'lucide-react';
+import { User, Settings, Zap, Clock, TrendingUp, Cloud, Languages, ShieldAlert, Trash2, X, Loader2, RefreshCw, BarChart3, CheckCircle2, Bot, AlertTriangle, Download, Smartphone, Share, MoreVertical, Flame, CalendarDays, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Habit } from '../types';
@@ -136,29 +136,27 @@ const InstallGuide: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { t } = useLanguage();
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     return (
-        // Updated background to gray-500/30
-        <div className="fixed inset-0 z-[130] bg-gray-500/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-            {/* Removed sm: styling to behave correctly in container */}
-            <div className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl slide-up space-y-6" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[130] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6" onClick={onClose}>
+            <div className="bg-white w-full max-w-[320px] rounded-[32px] p-6 shadow-2xl animate-fade-in space-y-5" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-bold text-gray-900">{t('user.install')}</h3>
-                    <button onClick={onClose} className="p-2 bg-gray-50 rounded-full"><X className="w-5 h-5 text-gray-400" /></button>
+                    <h3 className="text-lg font-bold text-gray-900">{t('user.install')}</h3>
+                    <button onClick={onClose} className="p-1.5 bg-gray-50 rounded-full"><X className="w-5 h-5 text-gray-400" /></button>
                 </div>
-                <div className="space-y-6">
+                <div className="space-y-5">
                     <p className="text-sm text-gray-500 leading-relaxed">{t('user.install.desc')}</p>
                     {isIOS ? (
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-3"><div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0"><Share className="w-4 h-4 text-indigo-600" /></div><p className="text-sm font-medium text-gray-700">{t('install.ios.step1')}</p></div>
-                            <div className="flex items-start gap-3"><div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0 text-indigo-600 font-bold text-xs">+</div><p className="text-sm font-medium text-gray-700">{t('install.ios.step2')}</p></div>
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0"><Share className="w-4 h-4 text-indigo-600" /></div><p className="text-xs font-bold text-gray-700">{t('install.ios.step1')}</p></div>
+                            <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0 text-indigo-600 font-bold text-xs">+</div><p className="text-xs font-bold text-gray-700">{t('install.ios.step2')}</p></div>
                         </div>
                     ) : (
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-3"><div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0"><MoreVertical className="w-4 h-4 text-indigo-600" /></div><p className="text-sm font-medium text-gray-700">{t('install.android.step1')}</p></div>
-                            <div className="flex items-start gap-3"><div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0"><Download className="w-4 h-4 text-indigo-600" /></div><p className="text-sm font-medium text-gray-700">{t('install.android.step2')}</p></div>
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0"><MoreVertical className="w-4 h-4 text-indigo-600" /></div><p className="text-xs font-bold text-gray-700">{t('install.android.step1')}</p></div>
+                            <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0"><Download className="w-4 h-4 text-indigo-600" /></div><p className="text-xs font-bold text-gray-700">{t('install.android.step2')}</p></div>
                         </div>
                     )}
                 </div>
-                <button onClick={onClose} className="w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl transition-transform active:scale-95">{t('install.button.close')}</button>
+                <button onClick={onClose} className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl transition-transform active:scale-95 text-sm">{t('install.button.close')}</button>
             </div>
         </div>
     );
@@ -218,68 +216,123 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     if (showAuth) {
         return (
-            // Updated background to gray-500/30
-            <div className="fixed inset-0 z-[120] bg-gray-500/30 backdrop-blur-sm flex items-center justify-center p-4">
-                <div className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl slide-up">
-                     <div className="flex justify-between items-center mb-8">
-                        <h3 className="text-2xl font-bold text-gray-900">{isLoginMode ? t('auth.login') : t('auth.signup')}</h3>
-                        <button onClick={() => setShowAuth(false)} className="p-2 bg-gray-50 rounded-full"><X className="w-6 h-6 text-gray-400" /></button>
+            <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
+                <div className="bg-white w-full max-w-[320px] rounded-[32px] p-6 shadow-2xl animate-fade-in">
+                     <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-bold text-gray-900">{isLoginMode ? t('auth.login') : t('auth.signup')}</h3>
+                        <button onClick={() => setShowAuth(false)} className="p-1.5 bg-gray-50 rounded-full"><X className="w-5 h-5 text-gray-400" /></button>
                     </div>
-                    <form onSubmit={handleAuth} className="space-y-4">
-                        <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder={t('auth.placeholder.phone')} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 outline-none" required />
-                        <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={t('auth.placeholder.pass')} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 outline-none" required minLength={6} />
-                        {authError && <div className="text-red-500 text-xs">{authError}</div>}
-                        <button type="submit" disabled={authLoading} className="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2">{authLoading && <Loader2 className="w-5 h-5 animate-spin" />}{isLoginMode ? t('auth.login') : t('auth.signup')}</button>
+                    <form onSubmit={handleAuth} className="space-y-3">
+                        <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder={t('auth.placeholder.phone')} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 outline-none text-sm font-medium" required />
+                        <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={t('auth.placeholder.pass')} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 outline-none text-sm font-medium" required minLength={6} />
+                        {authError && <div className="text-red-500 text-[10px]">{authError}</div>}
+                        <button type="submit" disabled={authLoading} className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-sm">{authLoading && <Loader2 className="w-4 h-4 animate-spin" />}{isLoginMode ? t('auth.login') : t('auth.signup')}</button>
                     </form>
-                    <div className="mt-4 text-center"><button onClick={() => setIsLoginMode(!isLoginMode)} className="text-sm font-semibold text-gray-500">{isLoginMode ? t('auth.switch.signup') : t('auth.switch.login')}</button></div>
+                    <div className="mt-4 text-center"><button onClick={() => setIsLoginMode(!isLoginMode)} className="text-xs font-semibold text-gray-400 hover:text-gray-600">{isLoginMode ? t('auth.switch.signup') : t('auth.switch.login')}</button></div>
                 </div>
             </div>
         );
     }
 
     return (
-        // Changed to Bottom Sheet style for consistency within Phone Container
-        // Updated background to gray-500/30
-        <div className="fixed inset-0 z-[110] bg-gray-500/30 backdrop-blur-sm flex items-end justify-center" onClick={onClose}>
-            <div className="bg-white w-full rounded-t-[32px] p-6 shadow-2xl slide-up h-[85vh] overflow-y-auto no-scrollbar" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-gray-900">{t('profile.settings')}</h3>
-                    <button onClick={onClose} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200"><X className="w-5 h-5 text-gray-500" /></button>
+        // Replaced bottom sheet with a Centered Floating Card
+        <div className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+            <div className="bg-white w-full max-w-[340px] rounded-[32px] p-5 shadow-2xl relative overflow-hidden" onClick={e => e.stopPropagation()}>
+                
+                {/* Header */}
+                <div className="flex justify-between items-center mb-5 px-1">
+                    <h3 className="text-lg font-bold text-gray-900">{t('profile.settings')}</h3>
+                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 active:scale-90 transition-transform">
+                        <X className="w-4 h-4 text-gray-500" />
+                    </button>
                 </div>
-                <div className="space-y-4">
-                     <div className="bg-gray-50 rounded-2xl p-4">
-                        <div className="flex items-center gap-3 mb-3"><Cloud className="w-5 h-5 text-indigo-500" /><span className="font-bold text-gray-900">{t('cloud.title')}</span>{user && <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">Pro</span>}</div>
+
+                <div className="space-y-3">
+                     {/* Cloud Card - More Compact */}
+                     <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 border border-gray-100/50">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1.5 bg-white rounded-lg shadow-sm">
+                                    <Cloud className="w-4 h-4 text-indigo-500" />
+                                </div>
+                                <div>
+                                    <span className="text-xs font-bold text-gray-900 block leading-tight">{t('cloud.title')}</span>
+                                    <span className="text-[10px] text-gray-400">{user ? user.email?.split('@')[0] : t('user.guest')}</span>
+                                </div>
+                            </div>
+                            {user && <span className="text-[9px] font-black bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full uppercase tracking-wider">Pro</span>}
+                        </div>
+                        
                         {user ? (
                              <div className="grid grid-cols-2 gap-2">
-                                <button onClick={() => handleSync(false)} disabled={syncing} className="bg-white py-2 rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-1">{syncing ? <Loader2 className="w-3 h-3 animate-spin"/> : <RefreshCw className="w-3 h-3"/>} Backup</button>
-                                <button onClick={() => handleSync(true)} disabled={syncing} className="bg-white py-2 rounded-xl text-xs font-bold shadow-sm flex items-center justify-center gap-1">Restore</button>
-                                <button onClick={async () => { await supabase.auth.signOut(); setUser(null); }} className="col-span-2 text-red-500 text-xs font-bold py-2">Log Out</button>
+                                <button onClick={() => handleSync(false)} disabled={syncing} className="bg-white py-2 rounded-xl text-[10px] font-bold shadow-sm border border-gray-100 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform text-gray-700">{syncing ? <Loader2 className="w-3 h-3 animate-spin"/> : <RefreshCw className="w-3 h-3 text-gray-400"/>} Backup</button>
+                                <button onClick={() => handleSync(true)} disabled={syncing} className="bg-white py-2 rounded-xl text-[10px] font-bold shadow-sm border border-gray-100 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform text-gray-700">Restore</button>
+                                <button onClick={async () => { await supabase.auth.signOut(); setUser(null); }} className="col-span-2 text-red-400 hover:text-red-500 text-[10px] font-bold py-1.5 mt-1">Log Out</button>
                              </div>
-                        ) : ( <button onClick={() => setShowAuth(true)} className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200">Login to Sync</button> )}
+                        ) : ( 
+                            <button onClick={() => setShowAuth(true)} className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-indigo-200 active:scale-[0.98] transition-transform">
+                                Login to Sync
+                            </button> 
+                        )}
                     </div>
                     
-                    <div className="bg-white border border-gray-100 p-4 rounded-2xl space-y-4">
-                         <div onClick={() => setAiMode(!aiMode)} className="flex items-center justify-between cursor-pointer">
+                    {/* Settings List */}
+                    <div className="space-y-1">
+                        {/* AI Mode */}
+                        <div onClick={() => setAiMode(!aiMode)} className="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors group">
                             <div className="flex items-center gap-3">
-                                <Bot className="w-5 h-5 text-purple-600" />
-                                <div>
-                                    <span className="font-bold text-gray-700 block flex items-center gap-2">{t('user.ai')}</span>
-                                    <span className={`text-[10px] font-medium ${isApiKeyMissing ? 'text-orange-500' : 'text-gray-400'}`}>
-                                        {isApiKeyMissing ? 'API Key Missing' : t('user.ai.desc')}
+                                <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform"><Bot className="w-4 h-4" /></div>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-bold text-gray-700 leading-tight">{t('user.ai')}</span>
+                                    <span className={`text-[9px] font-medium leading-tight ${isApiKeyMissing ? 'text-orange-500' : 'text-gray-400'}`}>
+                                        {isApiKeyMissing ? 'Missing API Key' : 'Auto-classify'}
                                     </span>
                                 </div>
                             </div>
-                            <div className={`w-10 h-6 rounded-full relative transition-colors ${aiMode ? 'bg-purple-600' : 'bg-gray-200'}`}>
-                                <div className={`w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform ${aiMode ? 'translate-x-4' : ''}`}></div>
+                            <div className={`w-9 h-5 rounded-full relative transition-colors ${aiMode ? 'bg-purple-600' : 'bg-gray-200'}`}>
+                                <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform shadow-sm ${aiMode ? 'translate-x-4' : ''}`}></div>
+                            </div>
+                        </div>
+
+                        {/* Install App */}
+                        <div onClick={() => setShowInstallGuide(true)} className="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors group">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 group-hover:scale-110 transition-transform"><Smartphone className="w-4 h-4" /></div>
+                                <span className="text-sm font-bold text-gray-700">{t('user.install')}</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-300" />
+                        </div>
+
+                        {/* Language */}
+                        <div onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')} className="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors group">
+                             <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform"><Languages className="w-4 h-4" /></div>
+                                <span className="text-sm font-bold text-gray-700">{t('user.language')}</span>
+                            </div>
+                            <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">{language === 'en' ? 'EN' : '中'}</span>
+                        </div>
+
+                        {/* Hardcore Mode */}
+                        <div onClick={toggleHardcoreMode} className="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors group">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform"><ShieldAlert className="w-4 h-4" /></div>
+                                <span className="text-sm font-bold text-gray-700">{t('user.hardcore')}</span>
+                            </div>
+                             <div className={`w-9 h-5 rounded-full relative transition-colors ${hardcoreMode ? 'bg-rose-500' : 'bg-gray-200'}`}>
+                                <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform shadow-sm ${hardcoreMode ? 'translate-x-4' : ''}`}></div>
                             </div>
                         </div>
                     </div>
 
-                    <div onClick={() => setShowInstallGuide(true)} className="flex items-center justify-between bg-white border border-gray-100 p-4 rounded-2xl active:bg-gray-50 cursor-pointer group"><div className="flex items-center gap-3"><Smartphone className="w-5 h-5 text-gray-500 group-hover:text-black transition-colors" /><span className="font-bold text-gray-700 group-hover:text-black transition-colors">{t('user.install')}</span></div><Download className="w-4 h-4 text-gray-300 group-hover:text-black transition-colors" /></div>
-                    <div onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')} className="flex items-center justify-between bg-white border border-gray-100 p-4 rounded-2xl active:bg-gray-50 cursor-pointer"><div className="flex items-center gap-3"><Languages className="w-5 h-5 text-gray-500" /><span className="font-bold text-gray-700">{t('user.language')}</span></div><span className="font-bold text-gray-900">{language === 'en' ? 'English' : '中文'}</span></div>
-                    <div onClick={toggleHardcoreMode} className="flex items-center justify-between bg-white border border-gray-100 p-4 rounded-2xl active:bg-gray-50 cursor-pointer"><div className="flex items-center gap-3"><ShieldAlert className="w-5 h-5 text-rose-500" /><span className="font-bold text-gray-700">{t('user.hardcore')}</span></div><div className={`w-10 h-6 rounded-full relative transition-colors ${hardcoreMode ? 'bg-rose-500' : 'bg-gray-200'}`}><div className={`w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform ${hardcoreMode ? 'translate-x-4' : ''}`}></div></div></div>
-                    <div onClick={() => { if(window.confirm(t('user.clear.confirm'))) clearAllTasks(); }} className="flex items-center gap-3 bg-white border border-gray-100 p-4 rounded-2xl active:bg-red-50 text-red-500 cursor-pointer"><Trash2 className="w-5 h-5" /><span className="font-bold">{t('user.clear')}</span></div>
-                    <div className="text-center text-xs text-gray-300 pt-4">{t('user.version')}</div>
+                    {/* Danger Zone */}
+                    <div onClick={() => { if(window.confirm(t('user.clear.confirm'))) clearAllTasks(); }} className="mt-4 p-3 rounded-2xl flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 active:bg-red-100 cursor-pointer transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                        <span className="text-xs font-bold">{t('user.clear')}</span>
+                    </div>
+
+                    <div className="text-center">
+                        <span className="text-[10px] text-gray-300 font-mono tracking-widest uppercase">{t('user.version')}</span>
+                    </div>
                 </div>
                 {showInstallGuide && <InstallGuide onClose={() => setShowInstallGuide(false)} />}
             </div>
