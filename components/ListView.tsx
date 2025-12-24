@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, useMotionValue, useTransform, useAnimation, AnimatePresence, PanInfo } from 'framer-motion';
 import { LayoutGrid, Trash2, CheckCircle2, Check, Hourglass, ChevronDown, ChevronRight, Inbox } from 'lucide-react';
@@ -9,6 +8,76 @@ import { WeeklyCalendar } from './WeeklyCalendar';
 import { CategorySheet } from './CategorySheet';
 import { TaskDetailModal } from './TaskDetailModal';
 import { LAYOUT, ANIMATION_DURATIONS } from '../constants';
+
+// --- Digital Reconstruction Entrance Animation (Shared Style) ---
+const GlitchEntrance: React.FC<{ children: React.ReactNode; taskCreatedAt: number }> = ({ children, taskCreatedAt }) => {
+    // 1. Lock "isNew" status on mount. 3000ms window.
+    const [isNew] = useState(() => Date.now() - taskCreatedAt < 3000);
+    const [showContent, setShowContent] = useState(!isNew);
+
+    useEffect(() => {
+        if (isNew) {
+            const timer = setTimeout(() => setShowContent(true), 800);
+            return () => clearTimeout(timer);
+        }
+    }, [isNew]);
+
+    // 2. Elevate z-index during animation to prevent subsequent siblings from covering the overlay
+    return (
+        <div className={`relative w-full transition-all ${!showContent ? 'z-30' : 'z-0'}`}>
+            <motion.div
+                initial={{ opacity: isNew ? 0 : 1 }}
+                animate={{ opacity: showContent ? 1 : 0 }}
+                transition={{ duration: 0.1 }}
+            >
+                {children}
+            </motion.div>
+
+            <AnimatePresence>
+                {!showContent && (
+                    <motion.div
+                        initial={{ opacity: 1 }}
+                        exit={{ 
+                            opacity: 0, 
+                            scale: 1.02, 
+                            filter: "brightness(2) blur(4px)", 
+                        }} 
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="absolute inset-0 z-20 bg-[#0F172A] rounded-2xl overflow-hidden flex flex-col justify-center px-4 gap-2 shadow-lg border border-emerald-500/30"
+                    >
+                        <div className="space-y-1.5 opacity-90">
+                             <motion.div 
+                                className="h-2 bg-emerald-400 rounded-sm shadow-[0_0_8px_rgba(52,211,153,0.6)]"
+                                initial={{ width: "0%" }} 
+                                animate={{ width: "70%" }} 
+                                transition={{ duration: 0.5, ease: "circOut" }}
+                            />
+                            <motion.div 
+                                className="h-1.5 bg-emerald-700/60 rounded-sm"
+                                initial={{ width: "0%" }} 
+                                animate={{ width: "40%" }} 
+                                transition={{ duration: 0.6, delay: 0.1 }}
+                            />
+                        </div>
+                        <motion.div 
+                            className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-400/10 to-transparent"
+                            initial={{ top: "-100%" }}
+                            animate={{ top: "200%" }}
+                            transition={{ duration: 0.8, ease: "linear", repeat: Infinity }}
+                        />
+                         <div className="absolute top-3 right-3 flex gap-1">
+                            <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_4px_rgba(52,211,153,0.8)]"></div>
+                            <div className="w-1 h-1 bg-emerald-900 rounded-full"></div>
+                        </div>
+                        <div className="absolute bottom-1 right-2 text-[6px] font-mono text-emerald-800 opacity-60">
+                            CONSTRUCTING...
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
 
 /**
  * ------------------------------------------------------------------
@@ -243,16 +312,17 @@ export const ListView: React.FC = () => {
                 </div>
                  <div className="space-y-1">
                     {sortedInbox.map(task => (
-                        <SwipeableTask 
-                            key={task.id} 
-                            task={task} 
-                            onCategorize={setCategorizingTask} 
-                            onDelete={deleteTask} 
-                            onComplete={completeTask} 
-                            onClick={setEditingTask} 
-                            t={t} 
-                            hardcoreMode={hardcoreMode} 
-                        />
+                        <GlitchEntrance key={task.id} taskCreatedAt={task.createdAt}>
+                            <SwipeableTask 
+                                task={task} 
+                                onCategorize={setCategorizingTask} 
+                                onDelete={deleteTask} 
+                                onComplete={completeTask} 
+                                onClick={setEditingTask} 
+                                t={t} 
+                                hardcoreMode={hardcoreMode} 
+                            />
+                        </GlitchEntrance>
                     ))}
                  </div>
             </div>
@@ -265,16 +335,17 @@ export const ListView: React.FC = () => {
                     <span className="text-xs font-bold text-gray-900 uppercase tracking-wider">{t('list.header.today')}</span>
                 </div>
                 {sortedActive.map(task => (
-                    <SwipeableTask 
-                        key={task.id} 
-                        task={task} 
-                        onCategorize={setCategorizingTask} 
-                        onDelete={deleteTask} 
-                        onComplete={completeTask} 
-                        onClick={setEditingTask} 
-                        t={t} 
-                        hardcoreMode={hardcoreMode} 
-                    />
+                    <GlitchEntrance key={task.id} taskCreatedAt={task.createdAt}>
+                        <SwipeableTask 
+                            task={task} 
+                            onCategorize={setCategorizingTask} 
+                            onDelete={deleteTask} 
+                            onComplete={completeTask} 
+                            onClick={setEditingTask} 
+                            t={t} 
+                            hardcoreMode={hardcoreMode} 
+                        />
+                    </GlitchEntrance>
                 ))}
             </div>
         )}

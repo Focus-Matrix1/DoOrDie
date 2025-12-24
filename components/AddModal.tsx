@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
 import { CategoryId } from '../types';
-import { Zap, Calendar, Users, Coffee, Repeat, Clock, CheckCircle } from 'lucide-react';
+import { Zap, Calendar, Users, Coffee, Repeat, Clock, CheckCircle, Sparkles, Bot } from 'lucide-react';
 
 interface AddModalProps {
   isOpen: boolean;
@@ -10,7 +10,7 @@ interface AddModalProps {
 }
 
 export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
-  const { addTask, addHabit, selectedDate } = useTasks();
+  const { addTask, addHabit, selectedDate, aiMode } = useTasks();
   const { t } = useLanguage();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -20,6 +20,9 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
   const [isHabit, setIsHabit] = useState(false);
   const [freqVal, setFreqVal] = useState('1');
   const [freqUnit, setFreqUnit] = useState('d');
+
+  // AI Visual States
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
@@ -49,12 +52,20 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
       setIsHabit(false);
       setFreqVal('1');
       setFreqUnit('d');
+      setIsProcessing(false);
     }
   }, [isOpen]);
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (title.trim()) {
+      // If AI is on and it's a task (not habit), show the "Parsing" animation
+      if (!isHabit && aiMode) {
+          setIsProcessing(true);
+          // Artificial delay to let the user see the cool animation
+          await new Promise(resolve => setTimeout(resolve, 600)); 
+      }
+
       if (isHabit) {
           // Add as Habit
           const randomColor = colors[Math.floor(Math.random() * colors.length)];
@@ -78,9 +89,16 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
         onClick={onClose}
     >
         <div 
-            className="w-full max-w-lg mx-auto bg-white rounded-t-[32px] p-6 pb-8 shadow-2xl slide-up"
+            className="w-full max-w-lg mx-auto bg-white rounded-t-[32px] p-6 pb-8 shadow-2xl slide-up relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
         >
+            {/* AI Parsing Ripple Effect Overlay */}
+            {isProcessing && (
+                <div className="absolute top-0 left-0 right-0 h-1 z-50">
+                    <div className="w-full h-full bg-gradient-to-r from-transparent via-purple-500 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }}></div>
+                </div>
+            )}
+
             <div className="flex justify-between items-center mb-4">
                 <button 
                     className="text-gray-400 text-sm font-medium px-2 py-1" 
@@ -88,20 +106,27 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
                 >
                     {t('list.cancel')}
                 </button>
-                <span className="text-[15px] font-bold text-gray-900">{isHabit ? t('habits.add') : t('add.title')}</span>
+                <div className="flex items-center gap-1.5">
+                    <span className="text-[15px] font-bold text-gray-900">{isHabit ? t('habits.add') : t('add.title')}</span>
+                    {!isHabit && aiMode && (
+                        <div className={`transition-opacity duration-300 ${isProcessing ? 'opacity-100' : 'opacity-30'}`}>
+                           <Bot className={`w-3.5 h-3.5 text-purple-600 ${isProcessing ? 'animate-pulse' : ''}`} />
+                        </div>
+                    )}
+                </div>
                 <button 
                     className={`text-sm font-bold h-8 px-4 flex items-center justify-center rounded-full transition-all duration-200 ${
                          !title.trim() ? 'bg-gray-100 text-gray-400' : 'bg-black text-white'
                     }`}
                     onClick={() => handleSubmit()}
-                    disabled={!title.trim()}
+                    disabled={!title.trim() || isProcessing}
                 >
-                    {t('add.button')}
+                    {isProcessing ? <Sparkles className="w-4 h-4 animate-spin text-purple-200" /> : t('add.button')}
                 </button>
             </div>
 
             {/* Input Area */}
-            <div className="space-y-4 mb-6">
+            <div className="space-y-4 mb-6 relative">
                 <textarea 
                     ref={inputRef}
                     value={title}
@@ -119,6 +144,13 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
                         }
                     }}
                 />
+                
+                {/* Visual Feedback Line for AI */}
+                {aiMode && !isHabit && title.length > 0 && !isProcessing && (
+                     <div className="h-0.5 w-full bg-gray-50 rounded-full overflow-hidden">
+                         <div className="h-full w-1/3 bg-purple-100/50 blur-sm animate-pulse transform -translate-x-full" style={{ animationDuration: '2s', animationIterationCount: 'infinite', animationName: 'slideRight' }}></div>
+                     </div>
+                )}
                 
                 {/* Description only for Tasks */}
                 {!isHabit && (
@@ -185,6 +217,19 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
                     <button onMouseDown={(e) => e.preventDefault()} onClick={() => setCategory('q4')} className={`px-3 py-2 rounded-xl border flex items-center gap-2 shrink-0 transition-colors ${category === 'q4' ? 'bg-slate-500 text-white border-slate-500' : 'border-gray-200 text-gray-500'}`}><Coffee className="w-3 h-3" /><span className="text-xs font-bold">Q4</span></button>
                 </div>
             )}
+            <style>{`
+                @keyframes shimmer {
+                    0% { background-position: 200% 0; }
+                    100% { background-position: -200% 0; }
+                }
+                .animate-shimmer {
+                    animation: shimmer 1.5s infinite linear;
+                }
+                @keyframes slideRight {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(300%); }
+                }
+            `}</style>
         </div>
     </div>
   );

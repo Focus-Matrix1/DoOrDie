@@ -1,12 +1,102 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Inbox, ChevronLeft, Zap, Calendar, Users, Coffee, AlignLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Task, QuadrantId } from '../types';
 import { TaskDetailModal } from './TaskDetailModal';
 import { useDraggable } from '../hooks/useDraggable';
 import { INTERACTION, ANIMATION_DURATIONS, LAYOUT } from '../constants';
+
+// --- Digital Reconstruction Entrance Animation ---
+const GlitchEntrance: React.FC<{ children: React.ReactNode; taskCreatedAt: number }> = ({ children, taskCreatedAt }) => {
+    // 1. Lock "isNew" state on mount. 
+    // We use a 3000ms window to be safe against slow re-renders, 
+    // ensuring the animation triggers for genuinely new tasks.
+    const [isNew] = useState(() => Date.now() - taskCreatedAt < 3000);
+    
+    // 2. Control visibility of the real content vs the digital overlay
+    const [showContent, setShowContent] = useState(!isNew);
+
+    useEffect(() => {
+        if (isNew) {
+            // Hold the digital block for 800ms before revealing the task
+            const timer = setTimeout(() => setShowContent(true), 800);
+            return () => clearTimeout(timer);
+        }
+    }, [isNew]);
+
+    // 3. Dynamic Z-Index is CRITICAL. 
+    // When the "Digital Construction" overlay is active (!showContent), 
+    // we must elevate this item's z-index (z-30) above its siblings.
+    // Otherwise, subsequent items in the list (which render later in the DOM) 
+    // naturally stack on top, potentially obscuring this item's absolute overlay 
+    // or shadows, causing the "only works when empty" bug.
+    return (
+        <div className={`relative w-full transition-all ${!showContent ? 'z-30' : 'z-0'}`}>
+            {/* The Real Task Card - Fades in when construction finishes */}
+            <motion.div
+                initial={{ opacity: isNew ? 0 : 1 }}
+                animate={{ opacity: showContent ? 1 : 0 }}
+                transition={{ duration: 0.1 }}
+            >
+                {children}
+            </motion.div>
+
+            {/* The "Digital Construction" Overlay - Exits when construction finishes */}
+            <AnimatePresence>
+                {!showContent && (
+                    <motion.div
+                        initial={{ opacity: 1 }}
+                        exit={{ 
+                            opacity: 0, 
+                            scale: 1.02, 
+                            filter: "brightness(2) blur(4px)", // Flash bang exit
+                        }} 
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="absolute inset-0 z-20 bg-[#0F172A] rounded-lg overflow-hidden flex flex-col justify-center px-4 gap-2 shadow-lg border border-emerald-500/30"
+                    >
+                        {/* Matrix-style Data Bars */}
+                        <div className="space-y-1.5 opacity-90">
+                            <motion.div 
+                                className="h-2 bg-emerald-400 rounded-sm shadow-[0_0_8px_rgba(52,211,153,0.6)]"
+                                initial={{ width: "0%" }} 
+                                animate={{ width: "70%" }} 
+                                transition={{ duration: 0.5, ease: "circOut" }}
+                            />
+                            <motion.div 
+                                className="h-1.5 bg-emerald-700/60 rounded-sm"
+                                initial={{ width: "0%" }} 
+                                animate={{ width: "40%" }} 
+                                transition={{ duration: 0.6, delay: 0.1 }}
+                            />
+                        </div>
+                        
+                        {/* Scanning Laser Effect */}
+                        <motion.div 
+                            className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-400/10 to-transparent"
+                            initial={{ top: "-100%" }}
+                            animate={{ top: "200%" }}
+                            transition={{ duration: 0.8, ease: "linear", repeat: Infinity }}
+                        />
+                        
+                        {/* Tech Decor - Blinking Status Light */}
+                        <div className="absolute top-2.5 right-2.5 flex gap-1">
+                            <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_4px_rgba(52,211,153,0.8)]"></div>
+                            <div className="w-1 h-1 bg-emerald-900 rounded-full"></div>
+                        </div>
+
+                        {/* Decoding Text Effect (Optional subtle detail) */}
+                        <div className="absolute bottom-1 right-2 text-[6px] font-mono text-emerald-800 opacity-60">
+                            CONSTRUCTING...
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
 
 const DraggableTaskItem: React.FC<{
   task: Task;
@@ -113,19 +203,21 @@ const Quadrant: React.FC<{
       </div>
       <div className="flex-1 px-2 pb-2 overflow-y-auto no-scrollbar pointer-events-auto space-y-1 task-list-container">
         {tasks.map((task, i) => (
-          <React.Fragment key={task.id}>
+          <div key={task.id} className="relative">
              {dropTarget?.zone === id && dropTarget.index === i && (
                  <div className="h-0.5 w-full bg-blue-500 rounded-full my-1 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
              )}
-             <DraggableTaskItem 
-                task={task}
-                onDragStart={onDragStart}
-                onClick={onClickTask}
-                onComplete={onComplete}
-                isDragging={draggedTaskId === task.id}
-                t={t}
-             />
-          </React.Fragment>
+             <GlitchEntrance taskCreatedAt={task.createdAt}>
+                 <DraggableTaskItem 
+                    task={task}
+                    onDragStart={onDragStart}
+                    onClick={onClickTask}
+                    onComplete={onComplete}
+                    isDragging={draggedTaskId === task.id}
+                    t={t}
+                 />
+             </GlitchEntrance>
+          </div>
         ))}
         {dropTarget?.zone === id && dropTarget.index === tasks.length && (
             <div className="h-0.5 w-full bg-blue-500 rounded-full my-1 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />

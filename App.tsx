@@ -1,11 +1,11 @@
-import React, { useState, useEffect, ReactNode, ErrorInfo } from 'react';
+import React, { useState, useEffect, ReactNode, ErrorInfo, Component } from 'react';
 import { TaskProvider, useTasks } from './context/TaskContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { MatrixView } from './components/MatrixView';
 import { ListView } from './components/ListView';
 import { HabitView } from './components/StatsView';
 import { ProfileView } from './components/UserView';
-import { LayoutGrid, ListTodo, User, Plus, Check, AlertTriangle, Repeat, Sparkles, HelpCircle, X, Wifi } from 'lucide-react';
+import { LayoutGrid, ListTodo, User, Plus, Check, AlertTriangle, Repeat, Sparkles, HelpCircle, X, Wifi, Bot } from 'lucide-react';
 import { ViewState } from './types';
 import { AddModal } from './components/AddModal';
 import { INTERACTION, ANIMATION_DURATIONS } from './constants';
@@ -20,14 +20,11 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = {
-      hasError: false,
-      error: null
-    };
-  }
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  public state: ErrorBoundaryState = {
+    hasError: false,
+    error: null
+  };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
@@ -215,12 +212,16 @@ const AiFeedbackToast = () => {
             style={{ top: 'calc(6px + env(safe-area-inset-top) + var(--sa-top, 0px))' }}
         >
             <div className={`bg-white/95 backdrop-blur-md border border-white/40 shadow-xl rounded-full pl-3 pr-4 py-2 relative overflow-hidden flex items-center gap-3 cursor-pointer ${
-                isSuccess ? 'shadow-purple-500/10' : 'shadow-gray-500/10'
+                isSuccess ? 'shadow-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.4)]' : 'shadow-gray-500/10'
             }`}>
                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
                      isSuccess ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'
                  }`}>
-                     {isSuccess ? <Sparkles className="w-3.5 h-3.5" /> : <HelpCircle className="w-3.5 h-3.5" />}
+                     {isSuccess ? (
+                         <Bot className="w-3.5 h-3.5 animate-pulse" strokeWidth={2.5} />
+                     ) : (
+                         <HelpCircle className="w-3.5 h-3.5" />
+                     )}
                  </div>
                  <div className="text-xs font-bold text-gray-800 leading-none whitespace-nowrap">
                      {aiFeedback.message}
