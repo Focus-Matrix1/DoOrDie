@@ -85,7 +85,12 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
   };
 
   const displayTitle = habit.translationKey ? t(habit.translationKey) : habit.title;
-  const frequencyText = habit.frequency === '1d' ? t('habits.freq.day') : habit.frequency;
+  
+  // Logic for unified frequency display
+  const isDaily = habit.frequency === '1d';
+  const badgeText = isDaily 
+      ? t('habits.daily_badge') 
+      : `${t('habits.freq.every')}${habit.frequency}${t('habits.freq.suffix')}`;
 
   return (
     <motion.div
@@ -137,15 +142,11 @@ const HabitCard = forwardRef<HTMLDivElement, { habit: Habit; onComplete: (id: st
              </div>
           </div>
           <div className="flex-1 min-w-0">
-             <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">{t('habits.daily_badge')}</span>
+             <div className="flex items-center gap-2 mb-1">
+                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">{badgeText}</span>
                 {habit.streak > 0 && <span className="text-[9px] font-black text-orange-500">🔥 {habit.streak}</span>}
              </div>
-             <h3 className="text-[15px] font-bold text-gray-900 truncate">{displayTitle}</h3>
-             <p className="text-[11px] font-medium text-gray-400 mt-0.5 flex items-center gap-1">
-                 <Repeat size={10} />
-                 {`${t('habits.freq.every')}${frequencyText}${t('habits.freq.suffix')}`}
-             </p>
+             <h3 className="text-[15px] font-bold text-gray-900 truncate leading-tight">{displayTitle}</h3>
           </div>
           <motion.div 
             className="ml-2 w-10 h-10 flex items-center justify-center active:scale-90"
