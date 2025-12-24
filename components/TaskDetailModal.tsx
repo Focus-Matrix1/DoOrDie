@@ -187,7 +187,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-1 block">
+                            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-1 block h-8 leading-tight">
                                 {t('detail.date')}
                             </label>
                             <input 
@@ -203,7 +203,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                         </div>
                         
                          <div>
-                            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-1 block">
+                            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-1 block h-8 leading-tight">
                                 {t('detail.duration')}
                             </label>
                             <div className={`flex items-center bg-gray-50 border border-gray-100 rounded-xl overflow-hidden transition-colors ${!hardcoreMode && 'focus-within:bg-white focus-within:border-gray-200'}`}>
