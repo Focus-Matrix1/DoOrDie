@@ -9,8 +9,6 @@ export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // ⚠️ 警告：未经允许，严禁擅自修改本文件
 // ------------------------------------------------------------------
 
-// Configure your Gemini API Key here.
-// 在此处配置您的 Gemini API Key。
-// You can replace process.env.API_KEY with your actual key string, e.g., "AIzaSy..."
-// 您可以将 process.env.API_KEY 替换为您的真实 Key 字符串，例如 "AIzaSy..."
-export const GEMINI_API_KEY = "AIzaSyAmHTCPSCLMxP5Lw0G4zFECrZLuadESAU4";
+// Configure your AI API Key here (DeepSeek via SiliconFlow).
+// 在此处配置您的 DeepSeek API Key (硅基流动)。
+export const DEEPSEEK_API_KEY = "sk-fnbrnbnijshgmuiknrpjtywzmysgsshncntuoxifygityvkl";
