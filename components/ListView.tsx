@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, useMotionValue, useTransform, useAnimation, AnimatePresence, PanInfo } from 'framer-motion';
 import { LayoutGrid, Trash2, CheckCircle2, Check, Hourglass, ChevronDown, ChevronRight, Inbox } from 'lucide-react';
@@ -10,9 +11,10 @@ import { TaskDetailModal } from './TaskDetailModal';
 import { LAYOUT, ANIMATION_DURATIONS } from '../constants';
 
 // --- Digital Reconstruction Entrance Animation (Shared Style) ---
-const GlitchEntrance: React.FC<{ children: React.ReactNode; taskCreatedAt: number }> = ({ children, taskCreatedAt }) => {
-    // 1. Lock "isNew" status on mount. 3000ms window.
-    const [isNew] = useState(() => Date.now() - taskCreatedAt < 3000);
+const GlitchEntrance: React.FC<{ children: React.ReactNode; taskCreatedAt: number; isAutoSorted?: boolean }> = ({ children, taskCreatedAt, isAutoSorted }) => {
+    // 1. Lock "isNew" status on mount. 
+    // Updated Logic: Only trigger if task is new AND auto-sorted.
+    const [isNew] = useState(() => (Date.now() - taskCreatedAt < 5000) && !!isAutoSorted);
     const [showContent, setShowContent] = useState(!isNew);
 
     useEffect(() => {
@@ -312,7 +314,7 @@ export const ListView: React.FC = () => {
                 </div>
                  <div className="space-y-1">
                     {sortedInbox.map(task => (
-                        <GlitchEntrance key={task.id} taskCreatedAt={task.createdAt}>
+                        <GlitchEntrance key={task.id} taskCreatedAt={task.createdAt} isAutoSorted={task.autoSorted}>
                             <SwipeableTask 
                                 task={task} 
                                 onCategorize={setCategorizingTask} 
@@ -335,7 +337,7 @@ export const ListView: React.FC = () => {
                     <span className="text-xs font-bold text-gray-900 uppercase tracking-wider">{t('list.header.today')}</span>
                 </div>
                 {sortedActive.map(task => (
-                    <GlitchEntrance key={task.id} taskCreatedAt={task.createdAt}>
+                    <GlitchEntrance key={task.id} taskCreatedAt={task.createdAt} isAutoSorted={task.autoSorted}>
                         <SwipeableTask 
                             task={task} 
                             onCategorize={setCategorizingTask} 

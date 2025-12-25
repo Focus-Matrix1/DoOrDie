@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Inbox, ChevronLeft, Zap, Calendar, Users, Coffee, AlignLeft } from 'lucide-react';
@@ -13,10 +14,12 @@ import { INTERACTION, ANIMATION_DURATIONS, LAYOUT } from '../constants';
 const GlitchEntrance: React.FC<{ 
     children: React.ReactNode; 
     taskCreatedAt: number;
-    showDropIndicator?: boolean; 
-}> = ({ children, taskCreatedAt, showDropIndicator }) => {
+    showDropIndicator?: boolean;
+    isAutoSorted?: boolean; // New prop
+}> = ({ children, taskCreatedAt, showDropIndicator, isAutoSorted }) => {
     // 1. Lock "isNew" state on mount. 
-    const [isNew] = useState(() => Date.now() - taskCreatedAt < 3000);
+    // Logic update: Only true if created recently AND auto-sorted by AI.
+    const [isNew] = useState(() => (Date.now() - taskCreatedAt < 5000) && !!isAutoSorted);
     
     // 2. Control visibility of the real content vs the digital overlay
     const [showContent, setShowContent] = useState(!isNew);
@@ -211,6 +214,7 @@ const Quadrant: React.FC<{
                 key={task.id} 
                 taskCreatedAt={task.createdAt}
                 showDropIndicator={dropTarget?.zone === id && dropTarget.index === i}
+                isAutoSorted={task.autoSorted} // Pass the flag
              >
                  <DraggableTaskItem 
                     task={task}
@@ -290,7 +294,8 @@ export const MatrixView: React.FC = () => {
           onClick={() => setInboxOpen(true)}
           className={`w-12 h-12 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center active:scale-90 transition-transform relative group cursor-pointer ${isInboxShaking ? 'animate-shake' : ''}`}
         >
-          <AlignLeft className="w-6 h-6 text-gray-600 group-hover:text-black" />
+          {/* Changed Icon to Inbox */}
+          <Inbox className="w-6 h-6 text-gray-600 group-hover:text-black" strokeWidth={2.5} />
           {inboxTasks.length > 0 && (
             <div className="absolute top-2.5 right-3 w-3 h-3 bg-rose-500 rounded-full border-2 border-white transform scale-100 transition-transform"></div>
           )}

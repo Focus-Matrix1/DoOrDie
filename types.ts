@@ -13,6 +13,7 @@ export interface Task {
   plannedDate?: string; // Format: YYYY-MM-DD
   duration?: string; // e.g. "30m", "1h"
   translationKey?: string; // Key for dynamic localization of demo tasks
+  autoSorted?: boolean; // True if the task was classified by AI
 }
 
 export interface Habit {

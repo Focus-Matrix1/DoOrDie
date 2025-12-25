@@ -96,7 +96,8 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const addTask = async (title: string, category: CategoryId = 'inbox', date?: string, description?: string, duration?: string) => {
     const tempId = Math.random().toString(36).substr(2, 9);
-    const newTask: Task = { id: tempId, title, description, category, createdAt: Date.now(), completed: false, plannedDate: date, duration };
+    // Explicitly set autoSorted to false for initial creation
+    const newTask: Task = { id: tempId, title, description, category, createdAt: Date.now(), completed: false, plannedDate: date, duration, autoSorted: false };
     setTasks(prev => [newTask, ...prev]);
     if (category === 'inbox') setInboxShakeTrigger(prev => prev + 1);
     setAddSuccessTrigger(prev => prev + 1);
@@ -124,7 +125,8 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             else if (aiResult.category !== 'inbox' && !aiResult.error) {
                 // Success Classification
                 const finalDuration = duration || aiResult.duration;
-                updateTask(tempId, { category: aiResult.category, duration: finalDuration });
+                // HERE: We set autoSorted to true because AI is moving it
+                updateTask(tempId, { category: aiResult.category, duration: finalDuration, autoSorted: true });
                 if (navigator.vibrate) navigator.vibrate(INTERACTION.VIBRATION.AI_AUTO_SORT);
                 
                 const durationText = finalDuration ? ` (${finalDuration})` : '';
