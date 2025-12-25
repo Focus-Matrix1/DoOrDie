@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -42,10 +43,14 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => {
-          inputRef.current?.focus();
+      // Small delay to ensure animation starts smoothly before focus
+      const timer = setTimeout(() => {
+          // KEY FIX: preventScroll: true prevents the desktop "jitter/shake"
+          // caused by the browser trying to scroll the animated element into view
+          inputRef.current?.focus({ preventScroll: true });
           adjustHeight(inputRef.current);
-      }, 100);
+      }, 150);
+      
       setTitle('');
       setDescription('');
       setCategory('inbox');
@@ -53,6 +58,8 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
       setFreqVal('1');
       setFreqUnit('d');
       setIsProcessing(false);
+      
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
@@ -83,13 +90,18 @@ export const AddModal: React.FC<AddModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    // Updated background to bg-black/20 for lighter gray appearance
-    <div 
-        className="fixed inset-0 z-[80] bg-black/20 backdrop-blur-sm flex items-end justify-center animate-fade-in"
-        onClick={onClose}
-    >
+    // Outer container handles z-index and fixed positioning relative to phone frame
+    <div className="fixed inset-0 z-[80] flex items-end justify-center pointer-events-none">
+        
+        {/* Backdrop - Separated to stay stable */}
         <div 
-            className="w-full max-w-lg mx-auto bg-white rounded-t-[32px] p-6 pb-8 shadow-2xl slide-up relative overflow-hidden"
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm animate-fade-in pointer-events-auto"
+            onClick={onClose}
+        />
+
+        {/* Modal Content - Positioned independently */}
+        <div 
+            className="w-full max-w-lg mx-auto bg-white rounded-t-[32px] p-6 pb-8 shadow-2xl slide-up relative z-10 overflow-hidden pointer-events-auto"
             onClick={(e) => e.stopPropagation()}
         >
             {/* AI Parsing Ripple Effect Overlay */}
