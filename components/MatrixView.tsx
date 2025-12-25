@@ -10,10 +10,12 @@ import { useDraggable } from '../hooks/useDraggable';
 import { INTERACTION, ANIMATION_DURATIONS, LAYOUT } from '../constants';
 
 // --- Digital Reconstruction Entrance Animation ---
-const GlitchEntrance: React.FC<{ children: React.ReactNode; taskCreatedAt: number }> = ({ children, taskCreatedAt }) => {
+const GlitchEntrance: React.FC<{ 
+    children: React.ReactNode; 
+    taskCreatedAt: number;
+    showDropIndicator?: boolean; 
+}> = ({ children, taskCreatedAt, showDropIndicator }) => {
     // 1. Lock "isNew" state on mount. 
-    // We use a 3000ms window to be safe against slow re-renders, 
-    // ensuring the animation triggers for genuinely new tasks.
     const [isNew] = useState(() => Date.now() - taskCreatedAt < 3000);
     
     // 2. Control visibility of the real content vs the digital overlay
@@ -28,13 +30,15 @@ const GlitchEntrance: React.FC<{ children: React.ReactNode; taskCreatedAt: numbe
     }, [isNew]);
 
     // 3. Dynamic Z-Index is CRITICAL. 
-    // When the "Digital Construction" overlay is active (!showContent), 
-    // we must elevate this item's z-index (z-30) above its siblings.
-    // Otherwise, subsequent items in the list (which render later in the DOM) 
-    // naturally stack on top, potentially obscuring this item's absolute overlay 
-    // or shadows, causing the "only works when empty" bug.
+    // We removed the wrapper div, so this div is now the direct child of the flex container.
+    // Setting z-30 here allows it to truly float above subsequent siblings in the list.
     return (
         <div className={`relative w-full transition-all ${!showContent ? 'z-30' : 'z-0'}`}>
+            {/* Internal Drop Indicator - Rendered here to avoid needing a wrapper div */}
+            {showDropIndicator && (
+                 <div className="h-0.5 w-full bg-blue-500 rounded-full my-1 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+            )}
+
             {/* The Real Task Card - Fades in when construction finishes */}
             <motion.div
                 initial={{ opacity: isNew ? 0 : 1 }}
@@ -203,11 +207,11 @@ const Quadrant: React.FC<{
       </div>
       <div className="flex-1 px-2 pb-2 overflow-y-auto no-scrollbar pointer-events-auto space-y-1 task-list-container">
         {tasks.map((task, i) => (
-          <div key={task.id} className="relative">
-             {dropTarget?.zone === id && dropTarget.index === i && (
-                 <div className="h-0.5 w-full bg-blue-500 rounded-full my-1 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
-             )}
-             <GlitchEntrance taskCreatedAt={task.createdAt}>
+             <GlitchEntrance 
+                key={task.id} 
+                taskCreatedAt={task.createdAt}
+                showDropIndicator={dropTarget?.zone === id && dropTarget.index === i}
+             >
                  <DraggableTaskItem 
                     task={task}
                     onDragStart={onDragStart}
@@ -217,7 +221,6 @@ const Quadrant: React.FC<{
                     t={t}
                  />
              </GlitchEntrance>
-          </div>
         ))}
         {dropTarget?.zone === id && dropTarget.index === tasks.length && (
             <div className="h-0.5 w-full bg-blue-500 rounded-full my-1 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
