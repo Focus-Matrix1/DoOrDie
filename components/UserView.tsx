@@ -249,7 +249,7 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                              <div className="grid grid-cols-1 gap-2">
                                 {/* Automated Sync Status Indicator / Force Sync Button */}
                                 <button 
-                                    onClick={syncData} 
+                                    onClick={() => syncData()} 
                                     disabled={syncStatus === 'syncing'}
                                     className={`bg-white py-2 rounded-xl text-[10px] font-bold shadow-sm border border-gray-100 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all ${
                                         syncStatus === 'error' ? 'text-red-500 border-red-100' : 'text-gray-700'

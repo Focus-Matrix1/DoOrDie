@@ -53,7 +53,7 @@ interface TaskContextType {
   
   // New Sync Infrastructure
   syncStatus: SyncStatus;
-  syncData: () => Promise<void>;
+  syncData: (overrideTasks?: Task[], overrideHabits?: Habit[]) => Promise<void>;
 
   addTask: (title: string, category?: CategoryId, date?: string, description?: string, duration?: string) => void;
   updateTask: (taskId: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>) => void;
@@ -173,11 +173,15 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []); // Run once on mount
 
   // --- Sync Data Implementation ---
-  const syncData = async () => {
+  const syncData = async (overrideTasks?: Task[], overrideHabits?: Habit[]) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return; // Not logged in, skip sync
 
     setSyncStatus('syncing');
+
+    // Resolve data sources - Prioritize overrides to prevent race conditions
+    const currentTasks = overrideTasks ?? tasks;
+    const currentHabits = overrideHabits ?? habits;
 
     try {
         const lastSyncTime = localStorage.getItem('focus-matrix-last-sync');
@@ -185,12 +189,12 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // 1. PUSH: Upload local changes (Row Level)
         const tasksToPush = lastSyncTime 
-            ? tasks.filter(t => t.updatedAt && t.updatedAt > lastSyncTime)
-            : tasks;
+            ? currentTasks.filter(t => t.updatedAt && t.updatedAt > lastSyncTime)
+            : currentTasks;
         
         const habitsToPush = lastSyncTime
-            ? habits.filter(h => h.updatedAt && h.updatedAt > lastSyncTime)
-            : habits;
+            ? currentHabits.filter(h => h.updatedAt && h.updatedAt > lastSyncTime)
+            : currentHabits;
 
         if (tasksToPush.length > 0) {
             const { error } = await supabase.from('tasks').upsert(
@@ -223,9 +227,10 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (rHabits) remoteHabits = rHabits.map(toCamelCase);
 
         // 3. MERGE: Last Write Wins
-        let newTasks = [...tasks];
-        let newHabits = [...habits];
-        let hasChanges = false;
+        let newTasks = [...currentTasks];
+        let newHabits = [...currentHabits];
+        // If overrides are present (even empty arrays), we treat this as a change that MUST be committed
+        let hasChanges = (overrideTasks !== undefined || overrideHabits !== undefined);
 
         if (remoteTasks.length > 0) {
             remoteTasks.forEach(rt => {
@@ -305,10 +310,12 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 console.log("Smart Clean: Clearing demo data for new login.");
                 setTasks([]);
                 setHabits([]);
+                // CRITICAL: Call syncData with empty arrays to prevent closure capture of old data
+                syncData([], []);
+            } else {
+                // Trigger normal sync
+                syncData();
             }
-
-            // Trigger sync immediately on login
-            syncData();
         }
     });
     return () => subscription.unsubscribe();
