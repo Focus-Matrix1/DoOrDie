@@ -1,6 +1,7 @@
 
 export type QuadrantId = 'q1' | 'q2' | 'q3' | 'q4';
 export type CategoryId = 'inbox' | QuadrantId;
+export type SyncStatus = 'idle' | 'syncing' | 'saved' | 'error';
 
 export interface Task {
   id: string;

@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
-import { User, Settings, Zap, Clock, TrendingUp, Cloud, Languages, ShieldAlert, Trash2, X, Loader2, RefreshCw, BarChart3, CheckCircle2, Bot, AlertTriangle, Download, Smartphone, Share, MoreVertical, Flame, CalendarDays, ChevronRight } from 'lucide-react';
+import { User, Settings, Zap, Clock, TrendingUp, Cloud, Languages, ShieldAlert, Trash2, X, Loader2, RefreshCw, BarChart3, CheckCircle2, Bot, AlertTriangle, Download, Smartphone, Share, MoreVertical, Flame, CalendarDays, ChevronRight, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Habit, Task } from '../types';
@@ -27,33 +27,6 @@ const getLocalDateStr = (d: Date) => {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-};
-
-// --- Conversion Helpers ---
-const toSnakeCase = (obj: any): any => {
-    const newObj: any = {};
-    for (const key in obj) {
-        let newKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-        if (key === 'createdAt') newKey = 'created_at'; // Special mapping if needed
-        if (key === 'updatedAt') newKey = 'updated_at';
-        if (key === 'isDeleted') newKey = 'is_deleted';
-        if (key === 'plannedDate') newKey = 'planned_date';
-        if (key === 'completedAt') newKey = 'completed_at';
-        if (key === 'completedDates') newKey = 'completed_dates';
-        if (key === 'autoSorted') newKey = 'auto_sorted';
-        if (key === 'translationKey') newKey = 'translation_key';
-        newObj[newKey] = obj[key];
-    }
-    return newObj;
-};
-
-const toCamelCase = (obj: any): any => {
-    const newObj: any = {};
-    for (const key in obj) {
-        let newKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-        newObj[newKey] = obj[key];
-    }
-    return newObj;
 };
 
 const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
@@ -189,10 +162,10 @@ const InstallGuide: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 };
 
 const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { hardcoreMode, toggleHardcoreMode, clearAllTasks, rawTasks, rawHabits, syncLocalData, aiMode, setAiMode, isApiKeyMissing } = useTasks();
+    // 1. Get automated sync status from Context
+    const { hardcoreMode, toggleHardcoreMode, clearAllTasks, aiMode, setAiMode, isApiKeyMissing, syncStatus, syncData } = useTasks();
     const { language, setLanguage, t } = useLanguage();
     const [user, setUser] = useState<SupabaseUser | null>(null);
-    const [syncing, setSyncing] = useState(false);
     const [showAuth, setShowAuth] = useState(false);
     const [showInstallGuide, setShowInstallGuide] = useState(false);
     const [phone, setPhone] = useState('');
@@ -224,110 +197,6 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         } catch (err: any) { setAuthError(err.message || t('auth.error')); } finally { setAuthLoading(false); }
     };
 
-    const handleSync = async () => {
-        if (!user) { setShowAuth(true); return; }
-        setSyncing(true);
-        try {
-            const lastSyncTime = localStorage.getItem('focus-matrix-last-sync');
-            const now = new Date().toISOString();
-
-            // 1. PUSH: Upload local changes (Row Level)
-            // If first sync (no lastSyncTime), push ALL data to ensure backend (which might be empty) gets initialized.
-            // If subsequent sync, only push updated items.
-            const tasksToPush = lastSyncTime 
-                ? rawTasks.filter(t => t.updatedAt && t.updatedAt > lastSyncTime)
-                : rawTasks;
-            
-            const habitsToPush = lastSyncTime
-                ? rawHabits.filter(h => h.updatedAt && h.updatedAt > lastSyncTime)
-                : rawHabits;
-
-            if (tasksToPush.length > 0) {
-                const { error } = await supabase.from('tasks').upsert(
-                    tasksToPush.map(t => ({ ...toSnakeCase(t), user_id: user.id }))
-                );
-                if (error) throw error;
-            }
-
-            if (habitsToPush.length > 0) {
-                const { error } = await supabase.from('habits').upsert(
-                    habitsToPush.map(h => ({ ...toSnakeCase(h), user_id: user.id }))
-                );
-                if (error) throw error;
-            }
-
-            // 2. PULL: Get remote changes
-            let remoteTasks: Task[] = [];
-            let remoteHabits: Habit[] = [];
-            
-            // Only fetch changes if we have synced before. 
-            // If it's the very first sync, we just pushed everything, so remote matches local (unless another device added data).
-            // For robustness, always pull changes after push.
-            
-            const taskQuery = supabase.from('tasks').select('*');
-            if (lastSyncTime) taskQuery.gt('updated_at', lastSyncTime);
-            const { data: rTasks, error: tErr } = await taskQuery;
-            if (tErr) throw tErr;
-            if (rTasks) remoteTasks = rTasks.map(toCamelCase);
-
-            const habitQuery = supabase.from('habits').select('*');
-            if (lastSyncTime) habitQuery.gt('updated_at', lastSyncTime);
-            const { data: rHabits, error: hErr } = await habitQuery;
-            if (hErr) throw hErr;
-            if (rHabits) remoteHabits = rHabits.map(toCamelCase);
-
-            // 3. MERGE: Apply remote changes to local state
-            // Strategy: Remote timestamp wins (which is effectively what we got by filtering > lastSyncTime)
-            if (remoteTasks.length > 0 || remoteHabits.length > 0) {
-                const mergedTasks = [...rawTasks];
-                remoteTasks.forEach(rt => {
-                    const idx = mergedTasks.findIndex(t => t.id === rt.id);
-                    if (idx > -1) {
-                        const localTask = mergedTasks[idx];
-                        // 🛡️ 核心修复：双重保险
-                        // 只有当 云端更新时间 > 本地更新时间 时，才覆盖本地
-                        const remoteTime = rt.updatedAt ? new Date(rt.updatedAt).getTime() : 0;
-                        const localTime = localTask.updatedAt ? new Date(localTask.updatedAt).getTime() : 0;
-                        
-                        if (remoteTime > localTime) {
-                            mergedTasks[idx] = rt;
-                        }
-                    } else {
-                        mergedTasks.push(rt);
-                    }
-                });
-
-                const mergedHabits = [...rawHabits];
-                remoteHabits.forEach(rh => {
-                    const idx = mergedHabits.findIndex(h => h.id === rh.id);
-                    if (idx > -1) {
-                         const localHabit = mergedHabits[idx];
-                         // 🛡️ 同样的修复逻辑应用于习惯
-                         const remoteTime = rh.updatedAt ? new Date(rh.updatedAt).getTime() : 0;
-                         const localTime = localHabit.updatedAt ? new Date(localHabit.updatedAt).getTime() : 0;
-
-                         if (remoteTime > localTime) {
-                             mergedHabits[idx] = rh;
-                         }
-                    } else {
-                        mergedHabits.push(rh);
-                    }
-                });
-
-                syncLocalData(mergedTasks, mergedHabits);
-            }
-
-            // 4. Update sync timestamp
-            localStorage.setItem('focus-matrix-last-sync', now);
-            alert(t('cloud.upload_success')); // Or generic "Sync complete"
-        } catch (err: any) { 
-            console.error(err);
-            alert("Sync Failed: " + (err.message || 'Unknown error')); 
-        } finally { 
-            setSyncing(false); 
-        }
-    };
-
     if (showAuth) {
         return (
             <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
@@ -349,7 +218,6 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
 
     return (
-        // Replaced bottom sheet with a Centered Floating Card
         <div className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
             <div className="bg-white w-full max-w-[340px] rounded-[32px] p-5 shadow-2xl relative overflow-hidden" onClick={e => e.stopPropagation()}>
                 
@@ -362,7 +230,7 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </div>
 
                 <div className="space-y-3">
-                     {/* Cloud Card - More Compact */}
+                     {/* Cloud Card - Automated Sync UI */}
                      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 border border-gray-100/50">
                         <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
@@ -379,10 +247,30 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         
                         {user ? (
                              <div className="grid grid-cols-1 gap-2">
-                                <button onClick={handleSync} disabled={syncing} className="bg-white py-2 rounded-xl text-[10px] font-bold shadow-sm border border-gray-100 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform text-gray-700">
-                                    {syncing ? <Loader2 className="w-3 h-3 animate-spin"/> : <RefreshCw className="w-3 h-3 text-gray-400"/>} 
-                                    {syncing ? t('cloud.syncing') : t('cloud.sync')}
+                                {/* Automated Sync Status Indicator / Force Sync Button */}
+                                <button 
+                                    onClick={syncData} 
+                                    disabled={syncStatus === 'syncing'}
+                                    className={`bg-white py-2 rounded-xl text-[10px] font-bold shadow-sm border border-gray-100 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all ${
+                                        syncStatus === 'error' ? 'text-red-500 border-red-100' : 'text-gray-700'
+                                    }`}
+                                >
+                                    {syncStatus === 'syncing' ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500"/>
+                                    ) : syncStatus === 'saved' ? (
+                                        <Check className="w-3.5 h-3.5 text-green-500"/>
+                                    ) : syncStatus === 'error' ? (
+                                        <AlertTriangle className="w-3.5 h-3.5"/>
+                                    ) : (
+                                        <Cloud className="w-3.5 h-3.5 text-gray-400"/>
+                                    )}
+                                    
+                                    {syncStatus === 'syncing' ? t('cloud.syncing') : 
+                                     syncStatus === 'saved' ? t('cloud.upload_success') : 
+                                     syncStatus === 'error' ? "Sync Error (Tap to Retry)" :
+                                     t('cloud.sync')}
                                 </button>
+                                
                                 <button onClick={async () => { await supabase.auth.signOut(); setUser(null); }} className="text-red-400 hover:text-red-500 text-[10px] font-bold py-1.5 mt-1">Log Out</button>
                              </div>
                         ) : ( 

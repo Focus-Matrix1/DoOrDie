@@ -1,12 +1,40 @@
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { Task, CategoryId, Habit } from '../types';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useRef } from 'react';
+import { Task, CategoryId, Habit, SyncStatus } from '../types';
 import { useSound } from '../hooks/useSound';
 import { useTaskClassifier } from '../hooks/useTaskClassifier';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useLanguage } from './LanguageContext';
 import { INTERACTION } from '../constants';
 import { DEEPSEEK_API_KEY } from '../config';
+import { supabase } from '../lib/supabase';
+
+// --- Helpers for Supabase Data Conversion ---
+const toSnakeCase = (obj: any): any => {
+    const newObj: any = {};
+    for (const key in obj) {
+        let newKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+        if (key === 'createdAt') newKey = 'created_at';
+        if (key === 'updatedAt') newKey = 'updated_at';
+        if (key === 'isDeleted') newKey = 'is_deleted';
+        if (key === 'plannedDate') newKey = 'planned_date';
+        if (key === 'completedAt') newKey = 'completed_at';
+        if (key === 'completedDates') newKey = 'completed_dates';
+        if (key === 'autoSorted') newKey = 'auto_sorted';
+        if (key === 'translationKey') newKey = 'translation_key';
+        newObj[newKey] = obj[key];
+    }
+    return newObj;
+};
+
+const toCamelCase = (obj: any): any => {
+    const newObj: any = {};
+    for (const key in obj) {
+        let newKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        newObj[newKey] = obj[key];
+    }
+    return newObj;
+};
 
 export interface AiFeedback {
     message: string;
@@ -22,6 +50,10 @@ interface TaskContextType {
   rawTasks: Task[];
   rawHabits: Habit[];
   syncLocalData: (newTasks: Task[], newHabits: Habit[]) => void;
+  
+  // New Sync Infrastructure
+  syncStatus: SyncStatus;
+  syncData: () => Promise<void>;
 
   addTask: (title: string, category?: CategoryId, date?: string, description?: string, duration?: string) => void;
   updateTask: (taskId: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>) => void;
@@ -89,6 +121,10 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [hardcoreMode, setHardcoreMode] = useLocalStorage<boolean>('focus-matrix-hardcore', false);
   const [aiMode, setAiMode] = useLocalStorage<boolean>('focus-matrix-ai', false);
 
+  // New Sync Status State
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [selectedDate, setSelectedDate] = useState<string>(getTodayString());
   const [inboxShakeTrigger, setInboxShakeTrigger] = useState(0);
   const [addSuccessTrigger, setAddSuccessTrigger] = useState(0);
@@ -135,6 +171,176 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (habitsChanged) setHabits(migratedHabits);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
+
+  // --- Sync Data Implementation ---
+  const syncData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return; // Not logged in, skip sync
+
+    setSyncStatus('syncing');
+
+    try {
+        const lastSyncTime = localStorage.getItem('focus-matrix-last-sync');
+        const now = new Date().toISOString();
+
+        // 1. PUSH: Upload local changes (Row Level)
+        const tasksToPush = lastSyncTime 
+            ? tasks.filter(t => t.updatedAt && t.updatedAt > lastSyncTime)
+            : tasks;
+        
+        const habitsToPush = lastSyncTime
+            ? habits.filter(h => h.updatedAt && h.updatedAt > lastSyncTime)
+            : habits;
+
+        if (tasksToPush.length > 0) {
+            const { error } = await supabase.from('tasks').upsert(
+                tasksToPush.map(t => ({ ...toSnakeCase(t), user_id: user.id }))
+            );
+            if (error) throw error;
+        }
+
+        if (habitsToPush.length > 0) {
+            const { error } = await supabase.from('habits').upsert(
+                habitsToPush.map(h => ({ ...toSnakeCase(h), user_id: user.id }))
+            );
+            if (error) throw error;
+        }
+
+        // 2. PULL: Get remote changes
+        let remoteTasks: Task[] = [];
+        let remoteHabits: Habit[] = [];
+        
+        const taskQuery = supabase.from('tasks').select('*');
+        if (lastSyncTime) taskQuery.gt('updated_at', lastSyncTime);
+        const { data: rTasks, error: tErr } = await taskQuery;
+        if (tErr) throw tErr;
+        if (rTasks) remoteTasks = rTasks.map(toCamelCase);
+
+        const habitQuery = supabase.from('habits').select('*');
+        if (lastSyncTime) habitQuery.gt('updated_at', lastSyncTime);
+        const { data: rHabits, error: hErr } = await habitQuery;
+        if (hErr) throw hErr;
+        if (rHabits) remoteHabits = rHabits.map(toCamelCase);
+
+        // 3. MERGE: Last Write Wins
+        let newTasks = [...tasks];
+        let newHabits = [...habits];
+        let hasChanges = false;
+
+        if (remoteTasks.length > 0) {
+            remoteTasks.forEach(rt => {
+                const idx = newTasks.findIndex(t => t.id === rt.id);
+                if (idx > -1) {
+                    const localTask = newTasks[idx];
+                    const remoteTime = rt.updatedAt ? new Date(rt.updatedAt).getTime() : 0;
+                    const localTime = localTask.updatedAt ? new Date(localTask.updatedAt).getTime() : 0;
+                    
+                    if (remoteTime > localTime) {
+                        newTasks[idx] = rt;
+                        hasChanges = true;
+                    }
+                } else {
+                    newTasks.push(rt);
+                    hasChanges = true;
+                }
+            });
+        }
+
+        if (remoteHabits.length > 0) {
+             remoteHabits.forEach(rh => {
+                const idx = newHabits.findIndex(h => h.id === rh.id);
+                if (idx > -1) {
+                     const localHabit = newHabits[idx];
+                     const remoteTime = rh.updatedAt ? new Date(rh.updatedAt).getTime() : 0;
+                     const localTime = localHabit.updatedAt ? new Date(localHabit.updatedAt).getTime() : 0;
+
+                     if (remoteTime > localTime) {
+                         newHabits[idx] = rh;
+                         hasChanges = true;
+                     }
+                } else {
+                    newHabits.push(rh);
+                    hasChanges = true;
+                }
+            });
+        }
+
+        if (hasChanges) {
+            setTasks(newTasks);
+            setHabits(newHabits);
+        }
+
+        localStorage.setItem('focus-matrix-last-sync', now);
+        setSyncStatus('saved');
+        setTimeout(() => setSyncStatus('idle'), 2000);
+
+    } catch (error) {
+        console.error("Auto Sync Failed:", error);
+        setSyncStatus('error');
+    }
+  };
+
+  // --- Auth & Smart Clean Logic ---
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_IN') {
+            // Check if local data is purely "Demo Data"
+            // Demo data criteria:
+            // 1. Task IDs are 1-5, Habit IDs are h1-h2
+            // 2. Counts match exactly (5 tasks, 2 habits) - meaning no new items added
+            // 3. No items are completed or deleted - meaning no interaction state changed
+            
+            const demoTaskIds = ['1', '2', '3', '4', '5'];
+            const demoHabitIds = ['h1', 'h2'];
+            
+            const isPureTasks = tasks.length === 5 && tasks.every(t => 
+                demoTaskIds.includes(t.id) && !t.completed && !t.isDeleted
+            );
+            
+            const isPureHabits = habits.length === 2 && habits.every(h => 
+                demoHabitIds.includes(h.id) && h.completedDates.length === 0 && !h.isDeleted
+            );
+
+            if (isPureTasks && isPureHabits) {
+                console.log("Smart Clean: Clearing demo data for new login.");
+                setTasks([]);
+                setHabits([]);
+            }
+
+            // Trigger sync immediately on login
+            syncData();
+        }
+    });
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks, habits]); 
+  // Dependency on tasks/habits is tricky here. 
+  // Realistically, the effect runs on mount, captures current state closure. 
+  // If we want it to check *current* state when auth changes, we need the deps.
+
+  // --- Auto-Sync Triggers ---
+  
+  // 1. Debounce Sync on Change (3 seconds)
+  useEffect(() => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      
+      // Only set timer if we suspect we are logged in (optimization)
+      // We don't want to spam if not logged in, but syncData handles the "no user" check gracefully.
+      syncTimerRef.current = setTimeout(() => {
+          syncData();
+      }, 3000);
+
+      return () => {
+          if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      };
+  }, [tasks, habits]);
+
+  // 2. Sync on Window Focus
+  useEffect(() => {
+      const onFocus = () => syncData();
+      window.addEventListener('focus', onFocus);
+      return () => window.removeEventListener('focus', onFocus);
+  }, []);
 
   // --- Helpers for Sync ---
   const syncLocalData = (newTasks: Task[], newHabits: Habit[]) => {
@@ -352,6 +558,10 @@ export const TaskProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       rawTasks: tasks, // Sync engine sees everything
       rawHabits: habits,
       syncLocalData,
+      
+      // New Sync Infrastructure Exposed
+      syncStatus,
+      syncData,
       
       addTask, updateTask, moveTask, reorderTask, completeTask, deleteTask, getTasksByCategory,
       addHabit, toggleHabit, deleteHabit,
