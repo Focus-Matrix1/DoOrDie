@@ -4,10 +4,12 @@ import { Task, QuadrantId } from '../types';
 
 interface DragState {
   task: Task;
-  x: number;
-  y: number;
-  offsetX: number;
-  offsetY: number;
+  // Static initial positions for the Ghost element (Viewpoint relative)
+  initialLeft: number;
+  initialTop: number;
+  // Pointer start position to calculate deltas
+  startX: number;
+  startY: number;
 }
 
 interface DropTarget {
@@ -18,6 +20,7 @@ interface DropTarget {
 interface UseDraggableProps {
   onDrop: (task: Task, target: DropTarget) => void;
   onDragStart?: () => void;
+  ghostRef: React.RefObject<HTMLElement | null>;
 }
 
 // Interfaces for Cached Layout Data
@@ -35,8 +38,9 @@ interface CachedItem {
     centerY: number;
 }
 
-export const useDraggable = ({ onDrop, onDragStart }: UseDraggableProps) => {
-  // State is used primarily for rendering the UI (Ghost item position)
+export const useDraggable = ({ onDrop, onDragStart, ghostRef }: UseDraggableProps) => {
+  // State is used ONLY for mounting/unmounting the ghost and static initialization.
+  // No updates occur during the drag move cycle.
   const [dragItem, setDragItem] = useState<DragState | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
 
@@ -52,17 +56,20 @@ export const useDraggable = ({ onDrop, onDragStart }: UseDraggableProps) => {
   // --- Event Handlers (Defined via Refs/Callback to be stable) ---
 
   const handlePointerMove = useCallback((e: PointerEvent) => {
-      // CRITICAL: Read from Ref, not State, to avoid stale closures and ensure immediate availability
+      // CRITICAL: Read from Ref, not State
       if (!dragItemRef.current) return;
       
       e.preventDefault(); // Prevent scrolling on mobile
       
       const { clientX, clientY } = e;
 
-      // 1. Update State/Ref for Visuals (Real-time)
-      const newItem = { ...dragItemRef.current, x: clientX, y: clientY };
-      dragItemRef.current = newItem;
-      setDragItem(newItem); // Trigger re-render for the ghost item
+      // 1. Direct DOM Manipulation (Zero React Renders)
+      if (ghostRef.current) {
+          const deltaX = clientX - dragItemRef.current.startX;
+          const deltaY = clientY - dragItemRef.current.startY;
+          // Apply hardware accelerated transform
+          ghostRef.current.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) scale(1.05) rotate(2deg)`;
+      }
 
       // 2. Throttle Drop Calculation (Limit to ~25fps to save CPU)
       const now = Date.now();
@@ -100,12 +107,12 @@ export const useDraggable = ({ onDrop, onDragStart }: UseDraggableProps) => {
           prev.zone !== newTarget.zone || 
           prev.index !== newTarget.index
       ) {
-          if (prev !== newTarget) { // Simple object reference check isn't enough, but logic above handles value diff
+          if (prev !== newTarget) { 
                setDropTarget(newTarget);
                dropTargetRef.current = newTarget;
           }
       }
-  }, []);
+  }, [ghostRef]);
 
   const handlePointerUp = useCallback((e: PointerEvent) => {
       // Cleanup Listeners Immediately
@@ -178,13 +185,13 @@ export const useDraggable = ({ onDrop, onDragStart }: UseDraggableProps) => {
     document.body.style.touchAction = 'none';
     document.body.style.webkitUserSelect = 'none';
 
-    // 4. Initialize State Object
+    // 4. Initialize State Object (Static Data Only)
     const startState: DragState = {
       task,
-      x: clientX,
-      y: clientY,
-      offsetX: clientX - rect.left,
-      offsetY: clientY - rect.top,
+      initialLeft: rect.left,
+      initialTop: rect.top,
+      startX: clientX,
+      startY: clientY
     };
 
     // 5. Update Ref FIRST (Synchronous Availability)
@@ -195,7 +202,7 @@ export const useDraggable = ({ onDrop, onDragStart }: UseDraggableProps) => {
     window.addEventListener('pointerup', handlePointerUp);
     window.addEventListener('pointercancel', handlePointerUp);
 
-    // 7. Trigger UI Render
+    // 7. Trigger UI Render (Mounts the ghost)
     setDragItem(startState);
     
     onDragStart?.();

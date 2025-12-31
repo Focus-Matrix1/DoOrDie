@@ -266,6 +266,9 @@ export const MatrixView: React.FC = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isInboxShaking, setInboxShaking] = useState(false);
   
+  // NEW: Ref to direct manipulate the ghost DOM
+  const ghostRef = useRef<HTMLDivElement>(null);
+  
   const inboxTasks = getTasksByCategory('inbox');
   const today = new Date().toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
@@ -284,7 +287,8 @@ export const MatrixView: React.FC = () => {
 
   const { dragItem, dropTarget, startDrag } = useDraggable({
     onDrop,
-    onDragStart: () => setInboxOpen(false)
+    onDragStart: () => setInboxOpen(false),
+    ghostRef // Pass Ref
   });
 
   const handleDragStart = (task: Task, clientX: number, clientY: number, element: HTMLElement, pointerId: number) => {
@@ -387,7 +391,16 @@ export const MatrixView: React.FC = () => {
       )}
 
       {dragItem && createPortal(
-        <div className="fixed z-[100] pointer-events-none bg-white p-3 rounded-lg shadow-2xl border border-gray-200 opacity-90 w-[240px]" style={{ left: dragItem.x - dragItem.offsetX, top: dragItem.y - dragItem.offsetY, transform: 'scale(1.05) rotate(2deg)' }}>
+        <div 
+            ref={ghostRef}
+            className="fixed z-[100] pointer-events-none bg-white p-3 rounded-lg shadow-2xl border border-gray-200 opacity-90 w-[240px] will-change-transform" 
+            style={{ 
+                left: dragItem.initialLeft, 
+                top: dragItem.initialTop,
+                // Initial transform matches the "lifted" state immediately
+                transform: 'scale(1.05) rotate(2deg)',
+            }}
+        >
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-gray-300"></div>
             <span className="text-xs font-bold text-gray-700">{dragItem.task.translationKey ? t(dragItem.task.translationKey) : dragItem.task.title}</span>
