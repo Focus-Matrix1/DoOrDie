@@ -51,7 +51,10 @@ export const useDraggable = ({ onDrop, onDragStart, ghostRef }: UseDraggableProp
   // Cache Refs
   const zonesRef = useRef<CachedZone[]>([]);
   const itemsRef = useRef<CachedItem[]>([]);
-  const lastThrottleRef = useRef<number>(0);
+  
+  // Throttling Refs
+  const lastThrottleRef = useRef<number>(0); // For math calculation frequency
+  const lastStateUpdateRef = useRef<number>(0); // For React Render frequency (The Smart Lock)
 
   // --- Event Handlers (Defined via Refs/Callback to be stable) ---
 
@@ -63,7 +66,7 @@ export const useDraggable = ({ onDrop, onDragStart, ghostRef }: UseDraggableProp
       
       const { clientX, clientY } = e;
 
-      // 1. Direct DOM Manipulation (Zero React Renders)
+      // 1. Direct DOM Manipulation (Zero React Renders, Always 60FPS)
       if (ghostRef.current) {
           const deltaX = clientX - dragItemRef.current.startX;
           const deltaY = clientY - dragItemRef.current.startY;
@@ -71,9 +74,11 @@ export const useDraggable = ({ onDrop, onDragStart, ghostRef }: UseDraggableProp
           ghostRef.current.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) scale(1.05) rotate(2deg)`;
       }
 
-      // 2. Throttle Drop Calculation (Limit to ~25fps to save CPU)
       const now = Date.now();
-      if (now - lastThrottleRef.current < 40) return;
+
+      // 2. Throttle Calculation (Limit math to ~30fps to save CPU)
+      // We calculate more often than we render to ensure we have fresh data ready
+      if (now - lastThrottleRef.current < 32) return;
       lastThrottleRef.current = now;
 
       // 3. Pure Math Hit-Testing (No DOM reads)
@@ -99,19 +104,32 @@ export const useDraggable = ({ onDrop, onDragStart, ghostRef }: UseDraggableProp
           newTarget = { zone: activeZone.id, index };
       }
 
-      // 4. Update Drop Target State (Only if changed)
+      // 4. Smart State Lock (The Gatekeeper)
       const prev = dropTargetRef.current;
-      if (
-          !prev || 
-          !newTarget || 
-          prev.zone !== newTarget.zone || 
-          prev.index !== newTarget.index
-      ) {
-          if (prev !== newTarget) { 
-               setDropTarget(newTarget);
-               dropTargetRef.current = newTarget;
-          }
+
+      // Condition A: Identity Check
+      // If the target hasn't logically changed, do absolutely nothing.
+      const isSameTarget = (prev === null && newTarget === null) || 
+                           (prev && newTarget && prev.zone === newTarget.zone && prev.index === newTarget.index);
+      
+      if (isSameTarget) return;
+
+      // Condition B: Time Gate (80ms Limit)
+      // We force React to update at max ~12fps for the blue line.
+      // This frees up the JS thread for the browser compositor to handle the ghost movement smoothly.
+      const timeSinceLastRender = now - lastStateUpdateRef.current;
+      
+      // Allow immediate update if we had no previous target (entering a zone for the first time)
+      // otherwise enforce the 80ms lock.
+      if (prev && timeSinceLastRender < 80) {
+          return; // REJECT UPDATE: Keep old state
       }
+
+      // Pass: Update State
+      setDropTarget(newTarget);
+      dropTargetRef.current = newTarget;
+      lastStateUpdateRef.current = now;
+
   }, [ghostRef]);
 
   const handlePointerUp = useCallback((e: PointerEvent) => {
@@ -196,6 +214,7 @@ export const useDraggable = ({ onDrop, onDragStart, ghostRef }: UseDraggableProp
 
     // 5. Update Ref FIRST (Synchronous Availability)
     dragItemRef.current = startState;
+    lastStateUpdateRef.current = 0; // Reset lock
     
     // 6. Bind Listeners IMMEDIATELY (Do not wait for useEffect)
     window.addEventListener('pointermove', handlePointerMove, { passive: false });

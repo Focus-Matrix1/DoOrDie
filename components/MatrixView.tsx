@@ -173,7 +173,8 @@ const DraggableTaskItem: React.FC<{
       onClick={() => onClick(task)}
       data-task-id={task.id}
       // REMOVED: active:scale-[0.98] and active:bg-gray-50 to prevent misleading visual feedback before drag starts
-      className={`flex items-center gap-1.5 p-1.5 bg-white rounded-lg shadow-sm border border-transparent transition-all touch-pan-y select-none cursor-default ${isDragging ? 'opacity-30' : ''}`}
+      // UPDATED: Changed touch-pan-y to touch-none to prevent browser scroll interference during long-press
+      className={`flex items-center gap-1.5 p-1.5 bg-white rounded-lg shadow-sm border border-transparent transition-all touch-none select-none cursor-default ${isDragging ? 'opacity-30' : ''}`}
     >
       <div
         className="checkbox-area w-5 h-5 flex items-center justify-center cursor-pointer"
