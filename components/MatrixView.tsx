@@ -1,14 +1,13 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import { Inbox, ChevronLeft, Zap, Calendar, Users, Coffee, AlignLeft } from 'lucide-react';
+import { Inbox, ChevronLeft, Zap, Calendar, Users, Coffee } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Task, QuadrantId } from '../types';
 import { TaskDetailModal } from './TaskDetailModal';
 import { useDraggable } from '../hooks/useDraggable';
-import { INTERACTION, ANIMATION_DURATIONS, LAYOUT } from '../constants';
+import { INTERACTION, ANIMATION_DURATIONS } from '../constants';
 
 // --- Digital Reconstruction Entrance Animation ---
 const GlitchEntrance: React.FC<{ 
@@ -37,7 +36,7 @@ const GlitchEntrance: React.FC<{
     // Setting z-30 here allows it to truly float above subsequent siblings in the list.
     return (
         <motion.div 
-            layout
+            // REMOVED: layout prop to prevent heavy layout calculations
             initial={{ opacity: isNew ? 0 : 1 }}
             animate={{ opacity: 1 }}
             exit={{ 
@@ -172,8 +171,7 @@ const DraggableTaskItem: React.FC<{
       onPointerCancel={handlePointerUp}
       onClick={() => onClick(task)}
       data-task-id={task.id}
-      // REMOVED: active:scale-[0.98] and active:bg-gray-50 to prevent misleading visual feedback before drag starts
-      // UPDATED: Changed touch-pan-y to touch-none to prevent browser scroll interference during long-press
+      // CRITICAL: touch-none ensures browser scrolling doesn't interrupt the long-press drag
       className={`flex items-center gap-1.5 p-1.5 bg-white rounded-lg shadow-sm border border-transparent transition-all touch-none select-none cursor-default ${isDragging ? 'opacity-30' : ''}`}
     >
       <div
@@ -267,9 +265,6 @@ export const MatrixView: React.FC = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isInboxShaking, setInboxShaking] = useState(false);
   
-  // NEW: Ref to direct manipulate the ghost DOM
-  const ghostRef = useRef<HTMLDivElement>(null);
-  
   const inboxTasks = getTasksByCategory('inbox');
   const today = new Date().toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
@@ -288,8 +283,7 @@ export const MatrixView: React.FC = () => {
 
   const { dragItem, dropTarget, startDrag } = useDraggable({
     onDrop,
-    onDragStart: () => setInboxOpen(false),
-    ghostRef // Pass Ref
+    onDragStart: () => setInboxOpen(false)
   });
 
   const handleDragStart = (task: Task, clientX: number, clientY: number, element: HTMLElement, pointerId: number) => {
@@ -389,25 +383,6 @@ export const MatrixView: React.FC = () => {
 
       {editingTask && (
         <TaskDetailModal task={editingTask} onClose={() => setEditingTask(null)} onUpdate={updateTask} onDelete={deleteTask} t={t} />
-      )}
-
-      {dragItem && createPortal(
-        <div 
-            ref={ghostRef}
-            className="fixed z-[100] pointer-events-none bg-white p-3 rounded-lg shadow-2xl border border-gray-200 opacity-90 w-[240px] will-change-transform" 
-            style={{ 
-                left: dragItem.initialLeft, 
-                top: dragItem.initialTop,
-                // Initial transform matches the "lifted" state immediately
-                transform: 'scale(1.05) rotate(2deg)',
-            }}
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-            <span className="text-xs font-bold text-gray-700">{dragItem.task.translationKey ? t(dragItem.task.translationKey) : dragItem.task.title}</span>
-          </div>
-        </div>,
-        document.body
       )}
     </div>
   );
