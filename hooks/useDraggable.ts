@@ -37,6 +37,16 @@ export const useDraggable = ({ onDrop, onDragStart }: UseDraggableProps) => {
   const [dragItem, setDragItem] = useState<DragState | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
 
+  // --- Step 1: The "Ref Shield" (Corrosion Layer) ---
+  // Create a ref to hold the latest onDrop callback.
+  // This allows us to call the latest logic without listing onDrop as a dependency.
+  const onDropRef = useRef(onDrop);
+  
+  // Sync the ref on every render (or when onDrop changes)
+  useEffect(() => {
+    onDropRef.current = onDrop;
+  }, [onDrop]);
+
   // Refs for logic consistency
   const dragItemRef = useRef<DragState | null>(null);
   const dropTargetRef = useRef<DropTarget | null>(null); 
@@ -52,6 +62,7 @@ export const useDraggable = ({ onDrop, onDragStart }: UseDraggableProps) => {
   const lastThrottleRef = useRef<number>(0);
   const lastStateUpdateRef = useRef<number>(0);
 
+  // handlePointerMove is stable (deps: [])
   const handlePointerMove = useCallback((e: PointerEvent) => {
       if (!dragItemRef.current) return;
       
@@ -109,6 +120,7 @@ export const useDraggable = ({ onDrop, onDragStart }: UseDraggableProps) => {
 
   }, []);
 
+  // --- Step 2: Stabilize handlePointerUp ---
   const handlePointerUp = useCallback((e: PointerEvent) => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
@@ -125,7 +137,8 @@ export const useDraggable = ({ onDrop, onDragStart }: UseDraggableProps) => {
       }
 
       if (dragItemRef.current && dropTargetRef.current) {
-          onDrop(dragItemRef.current.task, dropTargetRef.current);
+          // Access the stable Ref instead of the unstable prop
+          onDropRef.current(dragItemRef.current.task, dropTargetRef.current);
       }
 
       setDragItem(null);
@@ -135,7 +148,7 @@ export const useDraggable = ({ onDrop, onDragStart }: UseDraggableProps) => {
       dropTargetRef.current = null;
       zonesRef.current = [];
       itemsRef.current = [];
-  }, [handlePointerMove, onDrop]);
+  }, [handlePointerMove]); // REMOVED onDrop from dependencies
 
   const startDrag = useCallback((task: Task, clientX: number, clientY: number, element: HTMLElement, pointerId: number) => {
     const rect = element.getBoundingClientRect();
@@ -173,7 +186,6 @@ export const useDraggable = ({ onDrop, onDragStart }: UseDraggableProps) => {
 
     // --- CREATE VANILLA GHOST ---
     const ghost = element.cloneNode(true) as HTMLElement;
-    // Apply styles to override existing layout constraints and ensure it floats
     Object.assign(ghost.style, {
         position: 'fixed',
         left: `${rect.left}px`,
@@ -181,17 +193,16 @@ export const useDraggable = ({ onDrop, onDragStart }: UseDraggableProps) => {
         width: `${rect.width}px`,
         height: `${rect.height}px`,
         zIndex: '9999',
-        pointerEvents: 'none', // Critical: Let events pass through to underlying elements
+        pointerEvents: 'none',
         margin: '0',
-        transform: 'scale(1.05) rotate(2deg)', // Initial State
-        transition: 'none',     // No delay
+        transform: 'scale(1.05) rotate(2deg)',
+        transition: 'none',
         opacity: '0.9',
         boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
     });
     
     document.body.appendChild(ghost);
     ghostElementRef.current = ghost;
-    // ----------------------------
 
     const startState: DragState = {
       task,
@@ -211,6 +222,9 @@ export const useDraggable = ({ onDrop, onDragStart }: UseDraggableProps) => {
     onDragStart?.();
   }, [handlePointerMove, handlePointerUp, onDragStart]);
 
+  // --- Step 3: Lifecycle Lock ---
+  // Since handlePointerUp is now stable (deps: [handlePointerMove]), and handlePointerMove is stable (deps: []),
+  // this effect will NOT re-run during the drag, ensuring the ghost element is preserved.
   useEffect(() => {
       return () => {
           window.removeEventListener('pointermove', handlePointerMove);
