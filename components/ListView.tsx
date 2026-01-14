@@ -236,7 +236,14 @@ const SwipeableTask: React.FC<{
             onDragEnd={handleDragEnd}
             animate={controls}
             style={{ x }}
-            onTap={() => { if(menuSide === 'none') onClick(task); else retract(); }}
+            onTap={(event) => { 
+                const target = event.target as HTMLElement;
+                // CRITICAL FIX: Direct check to see if we clicked the checkbox area
+                if (target.closest('.checkbox-area')) return;
+                
+                if(menuSide === 'none') onClick(task); 
+                else retract(); 
+            }}
             className={`relative z-10 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.02)] border border-gray-100 flex items-center gap-3 ${
                 isInbox ? 'p-3 rounded-xl' : `py-4 pr-4 pl-5 rounded-2xl`
             }`}
@@ -245,14 +252,18 @@ const SwipeableTask: React.FC<{
                 <div className={`absolute left-1.5 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full ${config.bg}`}></div>
             )}
             
-            <motion.div 
-                className={`checkbox-area ${isInbox ? 'w-4 h-4' : 'w-5 h-5 mt-0.5'} rounded-md border-[1.5px] flex items-center justify-center shrink-0 transition-all ${
+            <div 
+                className={`checkbox-area ${isInbox ? 'w-4 h-4' : 'w-5 h-5 mt-0.5'} rounded-md border-[1.5px] flex items-center justify-center shrink-0 transition-all cursor-pointer ${
                     isInbox ? 'border-gray-300' : `${config.checkboxBorder} ${config.checkboxBg}`
                 } ${task.completed ? 'bg-green-500 !border-green-500' : ''}`}
-                onTap={(e) => { e.stopPropagation(); onComplete(task.id); }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                     e.stopPropagation();
+                     onComplete(task.id);
+                }}
             >
                  {task.completed ? <CheckCircle2 className="w-3.5 h-3.5 text-white" /> : !isInbox && <Check className={`w-3 h-3 stroke-[3] opacity-0 group-hover:opacity-100 transition-opacity ${config.checkColor}`} />}
-            </motion.div>
+            </div>
 
             <div className={`flex flex-col flex-1 overflow-hidden ${isInbox ? 'justify-center' : ''}`}>
                 <span className={`${isInbox ? 'text-[14px] font-medium text-gray-700' : 'text-[16px] font-semibold text-gray-900 leading-snug'} truncate ${task.completed ? 'text-gray-400 line-through' : ''}`}>
@@ -291,7 +302,23 @@ export const ListView: React.FC = () => {
       if (task.completed || task.category === 'inbox') return false;
       return task.plannedDate === selectedDate || (!task.plannedDate && showUndatedTasks);
   });
-  const completedTasks = tasks.filter(task => task.completed && task.plannedDate === selectedDate);
+  
+  // FIX: Completed tasks filter was too strict, excluding tasks completed today but planned for other days (or undated)
+  const completedTasks = tasks.filter(task => {
+      if (!task.completed) return false;
+      // 1. Matches planned date
+      if (task.plannedDate === selectedDate) return true;
+      // 2. Was completed on this date (regardless of plan)
+      if (task.completedAt) {
+          const d = new Date(task.completedAt);
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const completedDateStr = `${year}-${month}-${day}`;
+          return completedDateStr === selectedDate;
+      }
+      return false;
+  });
 
   const prevInboxCount = useRef(inboxTasks.length);
   useEffect(() => {

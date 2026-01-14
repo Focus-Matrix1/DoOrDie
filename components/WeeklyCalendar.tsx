@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -125,10 +126,12 @@ export const WeeklyCalendar: React.FC = () => {
                         <span className={`text-[10px] font-medium mb-0.5 ${selected ? 'text-gray-300' : ''}`}>{dayName}</span>
                         <span className={`text-[16px] font-bold ${today && !selected ? 'text-blue-600' : ''}`}>{dayNum}</span>
                         
-                        {/* Dot for today if not selected */}
-                        {today && !selected && (
-                            <div className="absolute bottom-1.5 w-1 h-1 bg-blue-600 rounded-full"></div>
-                        )}
+                        <div className="absolute bottom-1.5 flex gap-0.5 h-1 items-end">
+                            {/* Today Indicator (Blue Dot) - Show if it's today AND not selected */}
+                            {today && !selected && (
+                                <div className="w-1 h-1 bg-blue-600 rounded-full"></div>
+                            )}
+                        </div>
                     </div>
                 );
             })}
