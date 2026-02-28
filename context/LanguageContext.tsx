@@ -98,6 +98,9 @@ const translations: Record<Language, Record<string, string>> = {
     'user.install': 'Install App',
     'user.install.desc': 'Add to Home Screen',
     'user.version': 'Focus Matrix v2.1',
+    'user.edit_name': 'Edit Name',
+    'user.save_name': 'Save',
+    'user.cancel': 'Cancel',
 
     'add.title': 'New Task',
     'add.placeholder': 'What needs to be done?',
@@ -229,6 +232,9 @@ const translations: Record<Language, Record<string, string>> = {
     'user.install': '安装应用',
     'user.install.desc': '添加到主屏幕以获得最佳体验',
     'user.version': 'Focus Matrix v2.1',
+    'user.edit_name': '修改用户名',
+    'user.save_name': '保存',
+    'user.cancel': '取消',
 
     'add.title': '新任务',
     'add.placeholder': '准备做点什么？',

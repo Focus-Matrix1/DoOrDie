@@ -173,12 +173,43 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [isLoginMode, setIsLoginMode] = useState(true);
     const [authLoading, setAuthLoading] = useState(false);
     const [authError, setAuthError] = useState('');
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [newName, setNewName] = useState('');
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user ?? null));
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            const currentUser = session?.user ?? null;
+            setUser(currentUser);
+            if (currentUser?.user_metadata?.display_name) {
+                setNewName(currentUser.user_metadata.display_name);
+            }
+        });
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            const currentUser = session?.user ?? null;
+            setUser(currentUser);
+            if (currentUser?.user_metadata?.display_name) {
+                setNewName(currentUser.user_metadata.display_name);
+            }
+        });
         return () => subscription.unsubscribe();
     }, []);
+
+    const handleUpdateName = async () => {
+        if (!newName.trim()) return;
+        setAuthLoading(true);
+        try {
+            const { data, error } = await supabase.auth.updateUser({
+                data: { display_name: newName.trim() }
+            });
+            if (error) throw error;
+            setUser(data.user);
+            setIsEditingName(false);
+        } catch (err: any) {
+            setAuthError(err.message || t('auth.error'));
+        } finally {
+            setAuthLoading(false);
+        }
+    };
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -239,7 +270,9 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 </div>
                                 <div>
                                     <span className="text-xs font-bold text-gray-900 block leading-tight">{t('cloud.title')}</span>
-                                    <span className="text-[10px] text-gray-400">{user ? user.email?.split('@')[0] : t('user.guest')}</span>
+                                    <span className="text-[10px] text-gray-400">
+                                        {user ? (user.user_metadata?.display_name || user.email?.split('@')[0]) : t('user.guest')}
+                                    </span>
                                 </div>
                             </div>
                             {user && <span className="text-[9px] font-black bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full uppercase tracking-wider">Pro</span>}
@@ -247,6 +280,45 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         
                         {user ? (
                              <div className="grid grid-cols-1 gap-2">
+                                {isEditingName ? (
+                                    <div className="flex flex-col gap-2 mb-2">
+                                        <input 
+                                            type="text" 
+                                            value={newName} 
+                                            onChange={e => setNewName(e.target.value)} 
+                                            placeholder={t('user.edit_name')}
+                                            className="w-full bg-white border border-gray-200 rounded-xl py-2 px-3 outline-none text-xs font-medium"
+                                            autoFocus
+                                        />
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={handleUpdateName}
+                                                disabled={authLoading}
+                                                className="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-[10px] font-bold shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-1"
+                                            >
+                                                {authLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                                                {t('user.save_name')}
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    setIsEditingName(false);
+                                                    setNewName(user.user_metadata?.display_name || user.email?.split('@')[0] || '');
+                                                }}
+                                                className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl text-[10px] font-bold active:scale-[0.98] transition-all"
+                                            >
+                                                {t('user.cancel')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button 
+                                        onClick={() => setIsEditingName(true)}
+                                        className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 text-left px-1 mb-1"
+                                    >
+                                        {t('user.edit_name')}
+                                    </button>
+                                )}
+
                                 {/* Automated Sync Status Indicator / Force Sync Button */}
                                 <button 
                                     onClick={() => syncData()} 
@@ -405,7 +477,7 @@ export const ProfileView: React.FC = () => {
 
   const maxDaily = Math.max(...weeklyTrend.map(d => d.count), 1);
   const completionRate = tasks.length === 0 ? 0 : Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100);
-  const displayPhone = user?.email?.split('@')[0].replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') || t('user.guest');
+  const displayPhone = user?.user_metadata?.display_name || user?.email?.split('@')[0].replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') || t('user.guest');
 
   return (
     <div className="w-full h-full flex flex-col bg-[#F2F4F7] relative">
