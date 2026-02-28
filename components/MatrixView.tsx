@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Inbox, ChevronLeft, Zap, Calendar, Users, Coffee } from 'lucide-react';
+import { Inbox, Archive, ChevronLeft, Zap, Calendar, Users, Coffee } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTasks } from '../context/TaskContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -313,10 +313,10 @@ export const MatrixView: React.FC = () => {
           onClick={() => setInboxOpen(true)}
           className={`w-12 h-12 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center active:scale-90 transition-transform relative group cursor-pointer ${isInboxShaking ? 'animate-shake' : ''}`}
         >
-          {/* Changed Icon to Inbox */}
-          <Inbox className="w-6 h-6 text-gray-600 group-hover:text-black" strokeWidth={2.5} />
-          {inboxTasks.length > 0 && (
-            <div className="absolute top-2.5 right-3 w-3 h-3 bg-rose-500 rounded-full border-2 border-white transform scale-100 transition-transform"></div>
+          {inboxTasks.length > 0 ? (
+            <Archive className="w-6 h-6 text-gray-800 group-hover:text-black" strokeWidth={2.5} />
+          ) : (
+            <Inbox className="w-6 h-6 text-gray-400 group-hover:text-gray-600" strokeWidth={2.5} />
           )}
         </button>
       </div>
@@ -357,7 +357,12 @@ export const MatrixView: React.FC = () => {
         >
           <div>
              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-               <Inbox className="w-5 h-5 text-gray-900" /> {t('matrix.inbox')}
+               {inboxTasks.length > 0 ? (
+                 <Archive className="w-5 h-5 text-gray-900" />
+               ) : (
+                 <Inbox className="w-5 h-5 text-gray-900" />
+               )}
+               {t('matrix.inbox')}
              </h2>
              <p className="text-[11px] text-gray-400 mt-1 font-medium">{hardcoreMode ? t('list.hint.hardcore') : t('matrix.inbox.hint')}</p>
           </div>
