@@ -534,7 +534,10 @@ export const ProfileView: React.FC = () => {
         // Reduced to 20px
         style={{ paddingTop: 'calc(20px + env(safe-area-inset-top) + var(--sa-top, 0px))' }}
       >
-        <div className="flex items-center gap-4">
+        <div 
+          className="flex items-center gap-4 cursor-pointer active:scale-95 transition-transform" 
+          onClick={() => setShowSettings(true)}
+        >
              <div className={`w-14 h-14 rounded-full ${user?.user_metadata?.avatar_color || 'bg-gray-900'} flex items-center justify-center text-white shadow-lg border-4 border-white`}><User className="w-6 h-6" /></div>
              <div><h1 className="text-xl font-bold text-gray-900">{displayPhone}</h1><span className="text-[11px] px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-600 border-indigo-100 font-bold">{user ? t('user.pro') : t('user.tier')}</span></div>
         </div>
