@@ -171,8 +171,8 @@ const DraggableTaskItem: React.FC<{
       onPointerCancel={handlePointerUp}
       onClick={() => onClick(task)}
       data-task-id={task.id}
-      // CRITICAL: touch-none ensures browser scrolling doesn't interrupt the long-press drag
-      className={`flex items-center gap-1.5 p-1.5 bg-white rounded-lg shadow-sm border border-transparent transition-all touch-none select-none cursor-default ${isDragging ? 'opacity-30' : ''}`}
+      // CRITICAL: touch-pan-y allows vertical scrolling but prevents horizontal gestures.
+      className={`flex items-center gap-1.5 p-1.5 bg-white rounded-lg shadow-sm border border-transparent transition-all touch-pan-y select-none cursor-default ${isDragging ? 'opacity-30' : ''}`}
     >
       <div
         className="checkbox-area w-5 h-5 flex items-center justify-center cursor-pointer"
