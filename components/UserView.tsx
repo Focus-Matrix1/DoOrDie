@@ -302,7 +302,7 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     </span>
                                 </div>
                             </div>
-                            {user && <span className="text-[9px] font-black bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full uppercase tracking-wider">Pro</span>}
+                            {user && <span className="text-[9px] font-black bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full uppercase tracking-wider">{t('user.pro')}</span>}
                         </div>
                         
                         {user ? (
@@ -387,15 +387,15 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     
                                     {syncStatus === 'syncing' ? t('cloud.syncing') : 
                                      syncStatus === 'saved' ? t('cloud.upload_success') : 
-                                     syncStatus === 'error' ? "Sync Error (Tap to Retry)" :
+                                     syncStatus === 'error' ? t('cloud.sync_error') :
                                      t('cloud.sync')}
                                 </button>
                                 
-                                <button onClick={async () => { await supabase.auth.signOut(); setUser(null); }} className="text-red-400 hover:text-red-500 text-[10px] font-bold py-1.5 mt-1">Log Out</button>
+                                <button onClick={async () => { await supabase.auth.signOut(); setUser(null); }} className="text-red-400 hover:text-red-500 text-[10px] font-bold py-1.5 mt-1">{t('auth.logout')}</button>
                              </div>
                         ) : ( 
                             <button onClick={() => setShowAuth(true)} className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-indigo-200 active:scale-[0.98] transition-transform">
-                                Login to Sync
+                                {t('auth.login_to_sync')}
                             </button> 
                         )}
                     </div>
@@ -536,7 +536,7 @@ export const ProfileView: React.FC = () => {
       >
         <div className="flex items-center gap-4">
              <div className={`w-14 h-14 rounded-full ${user?.user_metadata?.avatar_color || 'bg-gray-900'} flex items-center justify-center text-white shadow-lg border-4 border-white`}><User className="w-6 h-6" /></div>
-             <div><h1 className="text-xl font-bold text-gray-900">{displayPhone}</h1><span className="text-[11px] px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-600 border-indigo-100 font-bold">{user ? 'Pro' : t('user.tier')}</span></div>
+             <div><h1 className="text-xl font-bold text-gray-900">{displayPhone}</h1><span className="text-[11px] px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-600 border-indigo-100 font-bold">{user ? t('user.pro') : t('user.tier')}</span></div>
         </div>
         <div className="flex items-center gap-3">
              <button onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')} className="p-3 bg-white rounded-full shadow-sm text-gray-600 active:scale-95 transition-transform"><Languages className="w-5 h-5" /></button>
