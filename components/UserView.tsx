@@ -29,6 +29,16 @@ const getLocalDateStr = (d: Date) => {
     return `${year}-${month}-${day}`;
 };
 
+const AVATAR_COLORS = [
+    { name: 'Gray', class: 'bg-gray-900' },
+    { name: 'Indigo', class: 'bg-indigo-600' },
+    { name: 'Rose', class: 'bg-rose-500' },
+    { name: 'Amber', class: 'bg-amber-500' },
+    { name: 'Emerald', class: 'bg-emerald-500' },
+    { name: 'Blue', class: 'bg-blue-500' },
+    { name: 'Violet', class: 'bg-violet-500' },
+];
+
 const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
     const { t, language } = useLanguage();
     const [tooltip, setTooltip] = useState<{ date: string, isCompleted: boolean, x: number, y: number } | null>(null);
@@ -174,6 +184,7 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [authLoading, setAuthLoading] = useState(false);
     const [authError, setAuthError] = useState('');
     const [isEditingName, setIsEditingName] = useState(false);
+    const [isEditingAvatar, setIsEditingAvatar] = useState(false);
     const [newName, setNewName] = useState('');
 
     useEffect(() => {
@@ -204,6 +215,22 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             if (error) throw error;
             setUser(data.user);
             setIsEditingName(false);
+        } catch (err: any) {
+            setAuthError(err.message || t('auth.error'));
+        } finally {
+            setAuthLoading(false);
+        }
+    };
+
+    const handleUpdateAvatar = async (colorClass: string) => {
+        setAuthLoading(true);
+        try {
+            const { data, error } = await supabase.auth.updateUser({
+                data: { avatar_color: colorClass }
+            });
+            if (error) throw error;
+            setUser(data.user);
+            setIsEditingAvatar(false);
         } catch (err: any) {
             setAuthError(err.message || t('auth.error'));
         } finally {
@@ -311,12 +338,33 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <button 
-                                        onClick={() => setIsEditingName(true)}
-                                        className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 text-left px-1 mb-1"
-                                    >
-                                        {t('user.edit_name')}
-                                    </button>
+                                    <div className="flex gap-3 mb-1">
+                                        <button 
+                                            onClick={() => setIsEditingName(true)}
+                                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 text-left px-1"
+                                        >
+                                            {t('user.edit_name')}
+                                        </button>
+                                        <button 
+                                            onClick={() => setIsEditingAvatar(!isEditingAvatar)}
+                                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 text-left px-1"
+                                        >
+                                            {t('user.edit_avatar')}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {isEditingAvatar && (
+                                    <div className="flex flex-wrap gap-2 mb-3 px-1 animate-fade-in">
+                                        {AVATAR_COLORS.map(color => (
+                                            <button
+                                                key={color.class}
+                                                onClick={() => handleUpdateAvatar(color.class)}
+                                                disabled={authLoading}
+                                                className={`w-6 h-6 rounded-full ${color.class} border-2 ${user?.user_metadata?.avatar_color === color.class ? 'border-indigo-400 scale-110' : 'border-white'} shadow-sm transition-all active:scale-90`}
+                                            />
+                                        ))}
+                                    </div>
                                 )}
 
                                 {/* Automated Sync Status Indicator / Force Sync Button */}
@@ -487,7 +535,7 @@ export const ProfileView: React.FC = () => {
         style={{ paddingTop: 'calc(20px + env(safe-area-inset-top) + var(--sa-top, 0px))' }}
       >
         <div className="flex items-center gap-4">
-             <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center text-white shadow-lg border-4 border-white"><User className="w-6 h-6" /></div>
+             <div className={`w-14 h-14 rounded-full ${user?.user_metadata?.avatar_color || 'bg-gray-900'} flex items-center justify-center text-white shadow-lg border-4 border-white`}><User className="w-6 h-6" /></div>
              <div><h1 className="text-xl font-bold text-gray-900">{displayPhone}</h1><span className="text-[11px] px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-600 border-indigo-100 font-bold">{user ? 'Pro' : t('user.tier')}</span></div>
         </div>
         <div className="flex items-center gap-3">
