@@ -86,6 +86,10 @@ const translations: Record<Language, Record<string, string>> = {
     'stats.habit.heatmap.missed': 'Missed',
     'stats.habit.heatmap.start': '✨ Start your first day',
 
+    'settings.account': 'Account',
+    'settings.preferences': 'Preferences',
+    'settings.app': 'App',
+    'settings.danger': 'Danger Zone',
     'user.guest': 'Guest User',
     'user.tier': 'Free Tier',
     'user.pro': 'Pro',
@@ -224,6 +228,10 @@ const translations: Record<Language, Record<string, string>> = {
     'stats.habit.heatmap.missed': '未达成',
     'stats.habit.heatmap.start': '✨ 开始你的第一天',
 
+    'settings.account': '账号',
+    'settings.preferences': '偏好设置',
+    'settings.app': '应用',
+    'settings.danger': '危险区域',
     'user.guest': '访客用户',
     'user.tier': '免费版',
     'user.pro': '专业版',

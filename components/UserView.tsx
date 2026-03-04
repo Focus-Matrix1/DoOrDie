@@ -6,6 +6,7 @@ import { User, Settings, Zap, Clock, TrendingUp, Cloud, Languages, ShieldAlert, 
 import { supabase } from '../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Habit, Task } from '../types';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const parseDuration = (durationStr?: string): number => {
   if (!durationStr) return 0;
@@ -276,191 +277,214 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
 
     return (
-        <div className="fixed inset-0 z-[110] bg-black/40 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
-            <div className="bg-white w-full max-w-[340px] rounded-[32px] p-5 shadow-2xl relative overflow-hidden" onClick={e => e.stopPropagation()}>
-                
-                {/* Header */}
-                <div className="flex justify-between items-center mb-5 px-1">
-                    <h3 className="text-lg font-bold text-gray-900">{t('profile.settings')}</h3>
-                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 active:scale-90 transition-transform">
-                        <X className="w-4 h-4 text-gray-500" />
-                    </button>
-                </div>
+        <motion.div 
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="absolute inset-0 z-[110] bg-[#F2F4F7] flex flex-col"
+        >
+            {/* Header */}
+            <div 
+                className="flex justify-between items-center px-6 pb-4 bg-white shrink-0 border-b border-gray-100"
+                style={{ paddingTop: 'calc(20px + env(safe-area-inset-top) + var(--sa-top, 0px))' }}
+            >
+                <h3 className="text-xl font-bold text-gray-900">{t('profile.settings')}</h3>
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full hover:bg-gray-200 active:scale-90 transition-transform">
+                    <X className="w-5 h-5 text-gray-500" />
+                </button>
+            </div>
 
-                <div className="space-y-3">
-                     {/* Cloud Card - Automated Sync UI */}
-                     <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 border border-gray-100/50">
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                                <div className="p-1.5 bg-white rounded-lg shadow-sm">
-                                    <Cloud className="w-4 h-4 text-indigo-500" />
+            <div className="flex-1 overflow-y-auto no-scrollbar p-5 space-y-6 pb-32">
+                     {/* Account Section */}
+                     <div className="space-y-2">
+                        <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2">{t('settings.account')}</h4>
+                        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-indigo-50 rounded-xl">
+                                        <Cloud className="w-5 h-5 text-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <span className="text-sm font-bold text-gray-900 block leading-tight">{t('cloud.title')}</span>
+                                        <span className="text-xs text-gray-400">
+                                            {user ? (user.user_metadata?.display_name || user.email?.split('@')[0]) : t('user.guest')}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span className="text-xs font-bold text-gray-900 block leading-tight">{t('cloud.title')}</span>
-                                    <span className="text-[10px] text-gray-400">
-                                        {user ? (user.user_metadata?.display_name || user.email?.split('@')[0]) : t('user.guest')}
-                                    </span>
-                                </div>
+                                {user && <span className="text-[10px] font-black bg-indigo-100 text-indigo-600 px-2.5 py-1 rounded-full uppercase tracking-wider">{t('user.pro')}</span>}
                             </div>
-                            {user && <span className="text-[9px] font-black bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full uppercase tracking-wider">{t('user.pro')}</span>}
-                        </div>
-                        
-                        {user ? (
-                             <div className="grid grid-cols-1 gap-2">
-                                {isEditingName ? (
-                                    <div className="flex flex-col gap-2 mb-2">
-                                        <input 
-                                            type="text" 
-                                            value={newName} 
-                                            onChange={e => setNewName(e.target.value)} 
-                                            placeholder={t('user.edit_name')}
-                                            className="w-full bg-white border border-gray-200 rounded-xl py-2 px-3 outline-none text-xs font-medium"
-                                            autoFocus
-                                        />
-                                        <div className="flex gap-2">
+                            
+                            {user ? (
+                                 <div className="grid grid-cols-1 gap-2 border-t border-gray-50 pt-3">
+                                    {isEditingName ? (
+                                        <div className="flex flex-col gap-2 mb-2">
+                                            <input 
+                                                type="text" 
+                                                value={newName} 
+                                                onChange={e => setNewName(e.target.value)} 
+                                                placeholder={t('user.edit_name')}
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 outline-none text-xs font-medium"
+                                                autoFocus
+                                            />
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    onClick={handleUpdateName}
+                                                    disabled={authLoading}
+                                                    className="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-[10px] font-bold shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-1"
+                                                >
+                                                    {authLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                                                    {t('user.save_name')}
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        setIsEditingName(false);
+                                                        setNewName(user.user_metadata?.display_name || user.email?.split('@')[0] || '');
+                                                    }}
+                                                    className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl text-[10px] font-bold active:scale-[0.98] transition-all"
+                                                >
+                                                    {t('user.cancel')}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-3 mb-1">
                                             <button 
-                                                onClick={handleUpdateName}
-                                                disabled={authLoading}
-                                                className="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-[10px] font-bold shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-1"
+                                                onClick={() => setIsEditingName(true)}
+                                                className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 text-left px-1"
                                             >
-                                                {authLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                                                {t('user.save_name')}
+                                                {t('user.edit_name')}
                                             </button>
                                             <button 
-                                                onClick={() => {
-                                                    setIsEditingName(false);
-                                                    setNewName(user.user_metadata?.display_name || user.email?.split('@')[0] || '');
-                                                }}
-                                                className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl text-[10px] font-bold active:scale-[0.98] transition-all"
+                                                onClick={() => setIsEditingAvatar(!isEditingAvatar)}
+                                                className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 text-left px-1"
                                             >
-                                                {t('user.cancel')}
+                                                {t('user.edit_avatar')}
                                             </button>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex gap-3 mb-1">
-                                        <button 
-                                            onClick={() => setIsEditingName(true)}
-                                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 text-left px-1"
-                                        >
-                                            {t('user.edit_name')}
-                                        </button>
-                                        <button 
-                                            onClick={() => setIsEditingAvatar(!isEditingAvatar)}
-                                            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 text-left px-1"
-                                        >
-                                            {t('user.edit_avatar')}
-                                        </button>
-                                    </div>
-                                )}
-
-                                {isEditingAvatar && (
-                                    <div className="flex flex-wrap gap-2 mb-3 px-1 animate-fade-in">
-                                        {AVATAR_COLORS.map(color => (
-                                            <button
-                                                key={color.class}
-                                                onClick={() => handleUpdateAvatar(color.class)}
-                                                disabled={authLoading}
-                                                className={`w-6 h-6 rounded-full ${color.class} border-2 ${user?.user_metadata?.avatar_color === color.class ? 'border-indigo-400 scale-110' : 'border-white'} shadow-sm transition-all active:scale-90`}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Automated Sync Status Indicator / Force Sync Button */}
-                                <button 
-                                    onClick={() => syncData()} 
-                                    disabled={syncStatus === 'syncing'}
-                                    className={`bg-white py-2 rounded-xl text-[10px] font-bold shadow-sm border border-gray-100 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all ${
-                                        syncStatus === 'error' ? 'text-red-500 border-red-100' : 'text-gray-700'
-                                    }`}
-                                >
-                                    {syncStatus === 'syncing' ? (
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500"/>
-                                    ) : syncStatus === 'saved' ? (
-                                        <Check className="w-3.5 h-3.5 text-green-500"/>
-                                    ) : syncStatus === 'error' ? (
-                                        <AlertTriangle className="w-3.5 h-3.5"/>
-                                    ) : (
-                                        <Cloud className="w-3.5 h-3.5 text-gray-400"/>
                                     )}
+
+                                    {isEditingAvatar && (
+                                        <div className="flex flex-wrap gap-2 mb-3 px-1 animate-fade-in">
+                                            {AVATAR_COLORS.map(color => (
+                                                <button
+                                                    key={color.class}
+                                                    onClick={() => handleUpdateAvatar(color.class)}
+                                                    disabled={authLoading}
+                                                    className={`w-6 h-6 rounded-full ${color.class} border-2 ${user?.user_metadata?.avatar_color === color.class ? 'border-indigo-400 scale-110' : 'border-white'} shadow-sm transition-all active:scale-90`}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Automated Sync Status Indicator / Force Sync Button */}
+                                    <button 
+                                        onClick={() => syncData()} 
+                                        disabled={syncStatus === 'syncing'}
+                                        className={`bg-gray-50 py-2.5 rounded-xl text-xs font-bold border border-gray-100 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all ${
+                                            syncStatus === 'error' ? 'text-red-500 border-red-100 bg-red-50' : 'text-gray-700 hover:bg-gray-100'
+                                        }`}
+                                    >
+                                        {syncStatus === 'syncing' ? (
+                                            <Loader2 className="w-4 h-4 animate-spin text-indigo-500"/>
+                                        ) : syncStatus === 'saved' ? (
+                                            <Check className="w-4 h-4 text-green-500"/>
+                                        ) : syncStatus === 'error' ? (
+                                            <AlertTriangle className="w-4 h-4"/>
+                                        ) : (
+                                            <Cloud className="w-4 h-4 text-gray-400"/>
+                                        )}
+                                        
+                                        {syncStatus === 'syncing' ? t('cloud.syncing') : 
+                                         syncStatus === 'saved' ? t('cloud.upload_success') : 
+                                         syncStatus === 'error' ? t('cloud.sync_error') :
+                                         t('cloud.sync')}
+                                    </button>
                                     
-                                    {syncStatus === 'syncing' ? t('cloud.syncing') : 
-                                     syncStatus === 'saved' ? t('cloud.upload_success') : 
-                                     syncStatus === 'error' ? t('cloud.sync_error') :
-                                     t('cloud.sync')}
-                                </button>
-                                
-                                <button onClick={async () => { await supabase.auth.signOut(); setUser(null); }} className="text-red-400 hover:text-red-500 text-[10px] font-bold py-1.5 mt-1">{t('auth.logout')}</button>
-                             </div>
-                        ) : ( 
-                            <button onClick={() => setShowAuth(true)} className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-indigo-200 active:scale-[0.98] transition-transform">
-                                {t('auth.login_to_sync')}
-                            </button> 
-                        )}
+                                    <button onClick={async () => { await supabase.auth.signOut(); setUser(null); }} className="text-red-400 hover:text-red-500 text-xs font-bold py-2 mt-1">{t('auth.logout')}</button>
+                                 </div>
+                            ) : ( 
+                                <button onClick={() => setShowAuth(true)} className="w-full bg-indigo-600 text-white py-3 rounded-xl text-sm font-bold shadow-md shadow-indigo-200 active:scale-[0.98] transition-transform mt-2">
+                                    {t('auth.login_to_sync')}
+                                </button> 
+                            )}
+                        </div>
                     </div>
                     
-                    {/* Settings List */}
-                    <div className="space-y-1">
-                        {/* AI Mode */}
-                        <div onClick={() => setAiMode(!aiMode)} className="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors group">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform"><Bot className="w-4 h-4" /></div>
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-gray-700 leading-tight">{t('user.ai')}</span>
-                                    <span className={`text-[9px] font-medium leading-tight ${isApiKeyMissing ? 'text-orange-500' : 'text-gray-400'}`}>
-                                        {isApiKeyMissing ? 'Missing API Key' : 'Auto-classify'}
-                                    </span>
+                    {/* Preferences Section */}
+                    <div className="space-y-2">
+                        <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2">{t('settings.preferences')}</h4>
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            {/* AI Mode */}
+                            <div onClick={() => setAiMode(!aiMode)} className="flex items-center justify-between p-4 border-b border-gray-50 hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform"><Bot className="w-4 h-4" /></div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-gray-700 leading-tight">{t('user.ai')}</span>
+                                        <span className={`text-[10px] font-medium leading-tight mt-0.5 ${isApiKeyMissing ? 'text-orange-500' : 'text-gray-400'}`}>
+                                            {isApiKeyMissing ? 'Missing API Key' : 'Auto-classify'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className={`w-10 h-6 rounded-full relative transition-colors ${aiMode ? 'bg-purple-600' : 'bg-gray-200'}`}>
+                                    <div className={`w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform shadow-sm ${aiMode ? 'translate-x-4' : ''}`}></div>
                                 </div>
                             </div>
-                            <div className={`w-9 h-5 rounded-full relative transition-colors ${aiMode ? 'bg-purple-600' : 'bg-gray-200'}`}>
-                                <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform shadow-sm ${aiMode ? 'translate-x-4' : ''}`}></div>
+
+                            {/* Language */}
+                            <div onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')} className="flex items-center justify-between p-4 border-b border-gray-50 hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors group">
+                                 <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform"><Languages className="w-4 h-4" /></div>
+                                    <span className="text-sm font-bold text-gray-700">{t('user.language')}</span>
+                                </div>
+                                <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">{language === 'en' ? 'EN' : '中'}</span>
+                            </div>
+
+                            {/* Hardcore Mode */}
+                            <div onClick={toggleHardcoreMode} className="flex items-center justify-between p-4 hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform"><ShieldAlert className="w-4 h-4" /></div>
+                                    <span className="text-sm font-bold text-gray-700">{t('user.hardcore')}</span>
+                                </div>
+                                 <div className={`w-10 h-6 rounded-full relative transition-colors ${hardcoreMode ? 'bg-rose-500' : 'bg-gray-200'}`}>
+                                    <div className={`w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform shadow-sm ${hardcoreMode ? 'translate-x-4' : ''}`}></div>
+                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Install App */}
-                        <div onClick={() => setShowInstallGuide(true)} className="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors group">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 group-hover:scale-110 transition-transform"><Smartphone className="w-4 h-4" /></div>
-                                <span className="text-sm font-bold text-gray-700">{t('user.install')}</span>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-gray-300" />
-                        </div>
-
-                        {/* Language */}
-                        <div onClick={() => setLanguage(language === 'en' ? 'zh' : 'en')} className="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors group">
-                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform"><Languages className="w-4 h-4" /></div>
-                                <span className="text-sm font-bold text-gray-700">{t('user.language')}</span>
-                            </div>
-                            <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">{language === 'en' ? 'EN' : '中'}</span>
-                        </div>
-
-                        {/* Hardcore Mode */}
-                        <div onClick={toggleHardcoreMode} className="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors group">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform"><ShieldAlert className="w-4 h-4" /></div>
-                                <span className="text-sm font-bold text-gray-700">{t('user.hardcore')}</span>
-                            </div>
-                             <div className={`w-9 h-5 rounded-full relative transition-colors ${hardcoreMode ? 'bg-rose-500' : 'bg-gray-200'}`}>
-                                <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 left-0.5 transition-transform shadow-sm ${hardcoreMode ? 'translate-x-4' : ''}`}></div>
+                    {/* App Section */}
+                    <div className="space-y-2">
+                        <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2">{t('settings.app')}</h4>
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            {/* Install App */}
+                            <div onClick={() => setShowInstallGuide(true)} className="flex items-center justify-between p-4 hover:bg-gray-50 active:bg-gray-100 cursor-pointer transition-colors group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 group-hover:scale-110 transition-transform"><Smartphone className="w-4 h-4" /></div>
+                                    <span className="text-sm font-bold text-gray-700">{t('user.install')}</span>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-gray-300" />
                             </div>
                         </div>
                     </div>
 
                     {/* Danger Zone */}
-                    <div onClick={() => { if(window.confirm(t('user.clear.confirm'))) clearAllTasks(); }} className="mt-4 p-3 rounded-2xl flex items-center justify-center gap-2 text-red-500 hover:bg-red-50 active:bg-red-100 cursor-pointer transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                        <span className="text-xs font-bold">{t('user.clear')}</span>
+                    <div className="space-y-2">
+                        <h4 className="text-[11px] font-bold text-red-400/70 uppercase tracking-wider px-2">{t('settings.danger')}</h4>
+                        <div className="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden">
+                            <div onClick={() => { if(window.confirm(t('user.clear.confirm'))) clearAllTasks(); }} className="flex items-center justify-center p-4 text-red-500 hover:bg-red-50 active:bg-red-100 cursor-pointer transition-colors">
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                <span className="text-sm font-bold">{t('user.clear')}</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="text-center">
+                    <div className="text-center pt-2 pb-4">
                         <span className="text-[10px] text-gray-300 font-mono tracking-widest uppercase">{t('user.version')}</span>
                     </div>
                 </div>
                 {showInstallGuide && <InstallGuide onClose={() => setShowInstallGuide(false)} />}
-            </div>
-        </div>
+        </motion.div>
     );
 };
 
@@ -594,7 +618,9 @@ export const ProfileView: React.FC = () => {
             </div>
         )}
       </div>
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      <AnimatePresence>
+        {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      </AnimatePresence>
     </div>
   );
 };
