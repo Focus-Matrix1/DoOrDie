@@ -106,6 +106,7 @@ const translations: Record<Language, Record<string, string>> = {
     'user.edit_name': 'Edit Name',
     'user.edit_avatar': 'Edit Avatar',
     'user.save_name': 'Save',
+    'user.save_avatar': 'Save',
     'user.cancel': 'Cancel',
 
     'add.title': 'New Task',
@@ -248,6 +249,7 @@ const translations: Record<Language, Record<string, string>> = {
     'user.edit_name': '修改用户名',
     'user.edit_avatar': '修改头像',
     'user.save_name': '保存',
+    'user.save_avatar': '保存',
     'user.cancel': '取消',
 
     'add.title': '新任务',

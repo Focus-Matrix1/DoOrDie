@@ -38,6 +38,13 @@ const AVATAR_COLORS = [
     { name: 'Emerald', class: 'bg-emerald-500' },
     { name: 'Blue', class: 'bg-blue-500' },
     { name: 'Violet', class: 'bg-violet-500' },
+    { name: 'Fuchsia', class: 'bg-fuchsia-500' },
+    { name: 'Cyan', class: 'bg-cyan-500' },
+    { name: 'Teal', class: 'bg-teal-500' },
+];
+
+const AVATAR_EMOJIS = [
+    '👤', '👨‍💻', '👩‍💻', '🚀', '⭐', '🔥', '💡', '🎯', '🎨', '🎵', '🎮', '☕', '🍕', '🐱', '🐶', '🦊', '🐼', '🦁', '🐯', '🐸', '🦄', '🦖', '🐙', '🦋'
 ];
 
 const HabitHeatmap: React.FC<{ habit: Habit }> = ({ habit }) => {
@@ -187,6 +194,8 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [isEditingName, setIsEditingName] = useState(false);
     const [isEditingAvatar, setIsEditingAvatar] = useState(false);
     const [newName, setNewName] = useState('');
+    const [tempAvatarColor, setTempAvatarColor] = useState('');
+    const [tempAvatarEmoji, setTempAvatarEmoji] = useState('');
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -223,11 +232,11 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
     };
 
-    const handleUpdateAvatar = async (colorClass: string) => {
+    const handleUpdateAvatar = async () => {
         setAuthLoading(true);
         try {
             const { data, error } = await supabase.auth.updateUser({
-                data: { avatar_color: colorClass }
+                data: { avatar_color: tempAvatarColor, avatar_emoji: tempAvatarEmoji }
             });
             if (error) throw error;
             setUser(data.user);
@@ -302,8 +311,12 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-indigo-50 rounded-xl">
-                                        <Cloud className="w-5 h-5 text-indigo-500" />
+                                    <div className={`w-10 h-10 rounded-full ${user?.user_metadata?.avatar_color || 'bg-gray-900'} flex items-center justify-center text-white shadow-sm border-2 border-white`}>
+                                        {user?.user_metadata?.avatar_emoji ? (
+                                            <span className="text-lg">{user.user_metadata.avatar_emoji}</span>
+                                        ) : (
+                                            <User className="w-5 h-5" />
+                                        )}
                                     </div>
                                     <div>
                                         <span className="text-sm font-bold text-gray-900 block leading-tight">{t('cloud.title')}</span>
@@ -356,7 +369,14 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                                 {t('user.edit_name')}
                                             </button>
                                             <button 
-                                                onClick={() => setIsEditingAvatar(!isEditingAvatar)}
+                                                onClick={() => {
+                                                    const willEdit = !isEditingAvatar;
+                                                    setIsEditingAvatar(willEdit);
+                                                    if (willEdit) {
+                                                        setTempAvatarColor(user?.user_metadata?.avatar_color || 'bg-gray-900');
+                                                        setTempAvatarEmoji(user?.user_metadata?.avatar_emoji || '');
+                                                    }
+                                                }}
                                                 className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 text-left px-1"
                                             >
                                                 {t('user.edit_avatar')}
@@ -365,15 +385,49 @@ const SettingsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     )}
 
                                     {isEditingAvatar && (
-                                        <div className="flex flex-wrap gap-2 mb-3 px-1 animate-fade-in">
-                                            {AVATAR_COLORS.map(color => (
+                                        <div className="flex flex-col gap-3 mb-3 px-1 animate-fade-in">
+                                            <div className="flex flex-wrap gap-2">
+                                                {AVATAR_COLORS.map(color => (
+                                                    <button
+                                                        key={color.class}
+                                                        onClick={() => setTempAvatarColor(color.class)}
+                                                        className={`w-6 h-6 rounded-full ${color.class} border-2 ${tempAvatarColor === color.class ? 'border-indigo-400 scale-110' : 'border-white'} shadow-sm transition-all active:scale-90`}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto no-scrollbar p-1.5 bg-gray-50 rounded-xl border border-gray-100">
                                                 <button
-                                                    key={color.class}
-                                                    onClick={() => handleUpdateAvatar(color.class)}
+                                                    onClick={() => setTempAvatarEmoji('')}
+                                                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-all ${tempAvatarEmoji === '' ? 'bg-white shadow-sm border border-gray-200 scale-110' : 'hover:bg-gray-200'}`}
+                                                >
+                                                    <User className="w-4 h-4 text-gray-400" />
+                                                </button>
+                                                {AVATAR_EMOJIS.map(emoji => (
+                                                    <button
+                                                        key={emoji}
+                                                        onClick={() => setTempAvatarEmoji(emoji)}
+                                                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-lg transition-all ${tempAvatarEmoji === emoji ? 'bg-white shadow-sm border border-gray-200 scale-110' : 'hover:bg-gray-200'}`}
+                                                    >
+                                                        {emoji}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <div className="flex gap-2 mt-1">
+                                                <button 
+                                                    onClick={handleUpdateAvatar}
                                                     disabled={authLoading}
-                                                    className={`w-6 h-6 rounded-full ${color.class} border-2 ${user?.user_metadata?.avatar_color === color.class ? 'border-indigo-400 scale-110' : 'border-white'} shadow-sm transition-all active:scale-90`}
-                                                />
-                                            ))}
+                                                    className="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-[10px] font-bold shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-1"
+                                                >
+                                                    {authLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                                                    {t('user.save_avatar')}
+                                                </button>
+                                                <button 
+                                                    onClick={() => setIsEditingAvatar(false)}
+                                                    className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl text-[10px] font-bold active:scale-[0.98] transition-all"
+                                                >
+                                                    {t('user.cancel')}
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
 
@@ -562,7 +616,13 @@ export const ProfileView: React.FC = () => {
           className="flex items-center gap-4 cursor-pointer active:scale-95 transition-transform" 
           onClick={() => setShowSettings(true)}
         >
-             <div className={`w-14 h-14 rounded-full ${user?.user_metadata?.avatar_color || 'bg-gray-900'} flex items-center justify-center text-white shadow-lg border-4 border-white`}><User className="w-6 h-6" /></div>
+             <div className={`w-14 h-14 rounded-full ${user?.user_metadata?.avatar_color || 'bg-gray-900'} flex items-center justify-center text-white shadow-lg border-4 border-white`}>
+                 {user?.user_metadata?.avatar_emoji ? (
+                     <span className="text-2xl">{user.user_metadata.avatar_emoji}</span>
+                 ) : (
+                     <User className="w-6 h-6" />
+                 )}
+             </div>
              <div><h1 className="text-xl font-bold text-gray-900">{displayPhone}</h1><span className="text-[11px] px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-600 border-indigo-100 font-bold">{user ? t('user.pro') : t('user.tier')}</span></div>
         </div>
         <div className="flex items-center gap-3">
